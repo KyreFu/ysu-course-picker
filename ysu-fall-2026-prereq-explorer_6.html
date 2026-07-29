@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yo San — prerequisite explorer, Fall 2026</title>
+<style>
+  :root{
+    --ink:#16211f;
+    --ink-2:#5c6a68;
+    --ink-3:#8d9997;
+    --bg:#fbfbfa;
+    --panel:#ffffff;
+    --rule:#e3e5e2;
+    --rule-2:#cdd1cd;
+    --accent:#0f6e56;
+    --accent-soft:#e1f5ee;
+    --warn:#854f0b;
+    --warn-soft:#faeeda;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+    font-size:14px;line-height:1.5;
+    display:flex;flex-direction:column;height:100vh;overflow:hidden;
+  }
+  header{
+    padding:14px 20px;border-bottom:1px solid var(--rule);background:var(--panel);
+    display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;flex:none;
+  }
+  h1{font-size:16px;font-weight:600;margin:0;letter-spacing:-0.01em}
+  header .meta{font-size:12.5px;color:var(--ink-3)}
+  main{flex:1;display:flex;min-height:0}
+  #cy{flex:1;background:var(--panel);min-width:0}
+  aside{
+    width:330px;flex:none;border-left:1px solid var(--rule);background:var(--panel);
+    overflow-y:auto;padding:16px 18px 40px;
+  }
+  aside.left{border-left:none;border-right:1px solid var(--rule);width:270px}
+  .sec{margin-bottom:22px}
+  .sec h2{
+    font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;
+    color:var(--ink-3);margin:0 0 9px;
+  }
+  .goal{
+    display:block;width:100%;text-align:left;padding:9px 11px;margin-bottom:6px;
+    border:1px solid var(--rule-2);border-radius:7px;background:var(--panel);
+    cursor:pointer;font:inherit;color:var(--ink);transition:.12s;
+  }
+  .goal:hover{border-color:var(--ink-3)}
+  .goal.on{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
+  .goal .gt{font-weight:600;font-size:13.5px}
+  .goal .gs{font-size:12px;color:var(--ink-2);margin-top:1px}
+  .bar{height:5px;border-radius:3px;background:#e9ebe8;margin-top:7px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .25s}
+  .stat{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-2);margin-top:5px}
+  .stat b{color:var(--ink);font-weight:600}
+  input[type=search]{
+    width:100%;padding:8px 10px;border:1px solid var(--rule-2);border-radius:7px;
+    font:inherit;font-size:13px;background:var(--panel);color:var(--ink);
+  }
+  input[type=search]:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+  .savestate{font-size:12px;color:var(--ink-2);display:flex;align-items:baseline;gap:6px;margin-bottom:8px}
+  .savestate .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none}
+  .savestate.warn{color:var(--warn)}
+  .savestate.warn .dot{background:var(--warn)}
+  .btnrow{display:flex;gap:6px}
+  .mini{
+    flex:1;padding:7px 4px;border-radius:6px;border:1px solid var(--rule-2);
+    background:var(--panel);color:var(--ink);font:inherit;font-size:12px;cursor:pointer;
+  }
+  .mini:hover{border-color:var(--accent);color:var(--accent)}
+  .tally{font-size:11px;color:var(--ink-3);font-weight:400;letter-spacing:0;text-transform:none}
+  .add{
+    flex:none;width:19px;height:19px;line-height:1;padding:0;border-radius:5px;
+    border:1px solid var(--rule-2);background:var(--panel);color:var(--ink-2);
+    font-size:13px;cursor:pointer;
+  }
+  .add:hover{border-color:var(--accent);color:var(--accent)}
+  .add.in{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);cursor:pointer}
+  .row.bad{background:#fdf1f1;margin:0 -10px;padding-left:10px;padding-right:10px}
+  .warn-dot{color:var(--warn);font-size:11px;flex:none}
+  .banner{
+    margin-top:8px;padding:7px 10px;border-radius:7px;font-size:12.5px;border:1px solid;
+  }
+  .banner.ok{background:var(--accent-soft);border-color:#9FE1CB;color:#04342C}
+  .banner.no{background:#FCEBEB;border-color:#F09595;color:#501313}
+  .banner ul{margin:5px 0 0;padding-left:16px}
+  .wk{margin-top:10px;border:1px solid var(--rule);border-radius:7px;overflow:hidden;display:none}
+  .wk.on{display:block}
+  .wk-head{display:flex;background:#f7f8f6;border-bottom:1px solid var(--rule)}
+  .wk-head span{flex:1;text-align:center;font-size:10px;color:var(--ink-3);padding:3px 0}
+  .wk-head span:first-child{flex:none;width:22px}
+  .wk-body{display:flex;position:relative;height:210px}
+  .wk-hours{flex:none;width:22px;position:relative;border-right:1px solid var(--rule)}
+  .wk-hours i{
+    position:absolute;left:0;right:0;font-size:8px;font-style:normal;
+    color:var(--ink-3);text-align:center;transform:translateY(-4px);
+  }
+  .wk-cols{flex:1;display:flex;position:relative}
+  .wk-col{flex:1;position:relative;border-right:1px solid #f0f1ef}
+  .wk-col:last-child{border-right:none}
+  .blk{
+    position:absolute;left:1px;right:1px;border-radius:3px;font-size:8.5px;
+    line-height:1.1;padding:1px 2px;overflow:hidden;border:1px solid;
+  }
+  .blk.clash{outline:1.5px solid #E24B4A;outline-offset:-1px;z-index:2}
+  .chk{display:flex;align-items:flex-start;gap:8px;font-size:13px;margin-bottom:7px;cursor:pointer}
+  .chk input{margin:3px 0 0;accent-color:var(--accent);flex:none}
+  .list{max-height:190px;overflow-y:auto;border:1px solid var(--rule);border-radius:7px;padding:8px 10px}
+  .row{
+    display:flex;justify-content:space-between;gap:8px;align-items:baseline;
+    padding:4px 0;font-size:12.5px;border-bottom:1px solid #f0f1ef;cursor:pointer;
+  }
+  .row:last-child{border-bottom:none}
+  .row:hover .code{text-decoration:underline}
+  .code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12px;font-weight:600;flex:none}
+  .row .nm{color:var(--ink-2);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+  .imp{
+    flex:none;font-size:10.5px;padding:1px 7px;border-radius:999px;
+    background:var(--warn-soft);border:1px solid #e6d3ab;color:var(--warn);font-weight:600;
+  }
+  .imp.zero{background:#f2f3f1;border-color:var(--rule);color:var(--ink-3);font-weight:400}
+  .empty{font-size:12.5px;color:var(--ink-3);font-style:italic;padding:4px 0}
+  .det h3{font-size:15px;margin:0 0 2px;font-weight:600}
+  .det .dsub{font-size:12.5px;color:var(--ink-2);margin-bottom:12px}
+  .pill{
+    display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;
+    border:1px solid;margin-right:5px;margin-bottom:5px;
+  }
+  .btn{
+    width:100%;padding:9px;border-radius:7px;border:1px solid var(--accent);
+    background:var(--accent);color:#fff;font:inherit;font-weight:500;cursor:pointer;
+  }
+  .btn.off{background:var(--panel);color:var(--accent)}
+  .btn:hover{filter:brightness(1.06)}
+  .lnk{
+    background:none;border:none;padding:0;font:inherit;font-size:12.5px;
+    color:var(--accent);cursor:pointer;text-decoration:underline;
+  }
+  .legend{display:flex;flex-wrap:wrap;gap:5px}
+  .lg{font-size:11px;padding:2px 7px;border-radius:4px;border:1px solid}
+  .note{font-size:12px;color:var(--ink-3);line-height:1.5}
+  .tick{color:var(--accent);font-weight:600}
+  .cross{color:var(--ink-3)}
+  @media (max-width:900px){
+    main{flex-direction:column}
+    aside,aside.left{width:auto;border:none;border-top:1px solid var(--rule);max-height:44vh}
+    #cy{min-height:52vh}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Prerequisite explorer</h1>
+  <span class="meta">Yo San University · Fall 2026 schedule · MAcCHM &amp; DAcCHM</span>
+  <span class="meta" style="margin-left:auto">Click any course to trace its chain. Progress saves in this browser only.</span>
+</header>
+
+<main>
+  <aside class="left">
+    <div class="sec">
+      <h2>Goal</h2>
+      <div id="goals"></div>
+    </div>
+    <div class="sec">
+      <h2>My plan <span id="plan-count" class="tally"></span></h2>
+      <div class="list" id="plan"></div>
+      <div id="plan-status"></div>
+      <div class="wk" id="week"></div>
+      <p class="note" style="margin:8px 0 0">Add courses with <b>+</b> from the list below or from any course's detail panel. Times come from the Fall 2026 schedule; where a course has two sections, the grid shows a combination that works.</p>
+    </div>
+    <div class="sec">
+      <h2>Ready to take now</h2>
+      <div class="list" id="ready"></div>
+      <p class="note" style="margin:7px 0 0">Ranked by how much each course unblocks. The number is how many remaining courses toward the selected goal depend on it.</p>
+    </div>
+    <div class="sec">
+      <h2>Non-course requirements</h2>
+      <label class="chk"><input type="checkbox" id="req-hours"> 150 hours clinical theater &amp; observation</label>
+      <label class="chk"><input type="checkbox" id="req-certs"> CPR, first aid and CNT certification</label>
+      <div class="note" id="qi-note"></div>
+    </div>
+    <div class="sec">
+      <h2>Save &amp; restore</h2>
+      <div id="save-state" class="savestate"></div>
+      <div class="btnrow">
+        <button class="mini" id="export">Back up to file</button>
+        <button class="mini" id="import">Restore from file</button>
+      </div>
+      <input type="file" id="file" accept="application/json,.json" hidden>
+      <div id="io-msg"></div>
+      <button class="lnk" id="reset" style="margin-top:10px">Clear all progress</button>
+    </div>
+  </aside>
+
+  <div id="cy"></div>
+
+  <aside>
+    <div class="sec">
+      <h2>Find a course</h2>
+      <input type="search" id="search" placeholder="Code or title — e.g. HM210, pathophys" autocomplete="off">
+    </div>
+    <div class="sec det" id="detail"></div>
+    <div class="sec">
+      <h2>Track</h2>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="sec">
+      <h2>Reading the graph</h2>
+      <p class="note">
+        Solid arrows are hard prerequisites. Dashed arrows are corequisites — the schedule allows them concurrently.
+        A filled node is one you've marked complete; a ringed node is one every prerequisite for which is satisfied.
+        Selecting a course dims everything except its own chain: what it needs behind it, what it unlocks ahead.
+        The view zooms in far enough to stay readable, so long chains will run off-screen — drag to follow them,
+        or click empty space to zoom back out to the whole graph.
+      </p>
+    </div>
+    <div class="sec">
+      <h2>Caveats</h2>
+      <p class="note">
+        EX210 and EX220 are merged into one node — same prerequisites, taken the same term.
+        CM201 also lists CM100 Chinese Medical Terminology, not offered this term and not graphed.
+        EX300 accepts WM360 or WM361; only WM361 runs in Fall 2026.
+        Prerequisites can only be waived by approved Override Petition — check with the registrar before relying on this.
+      </p>
+    </div>
+  </aside>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
+<script>
+const TRACKS = {
+  cm:{name:'TCM theory & diagnosis', bg:'#EEEDFE', line:'#7F77DD', ink:'#26215C'},
+  hm:{name:'Herbal medicine',        bg:'#E1F5EE', line:'#1D9E75', ink:'#04342C'},
+  ac:{name:'Acupuncture',            bg:'#FAECE7', line:'#D85A30', ink:'#4A1B0C'},
+  wm:{name:'Biomedicine',            bg:'#E6F1FB', line:'#378ADD', ink:'#042C53'},
+  cl:{name:'Clinical',               bg:'#FBEAF0', line:'#D4537E', ink:'#4B1528'},
+  tq:{name:'Taoist studies & qi',    bg:'#EAF3DE', line:'#639922', ink:'#173404'},
+  ex:{name:'Benchmark exams',        bg:'#FAEEDA', line:'#BA7517', ink:'#412402'},
+  pd:{name:'Doctoral (PD)',          bg:'#F1EFE8', line:'#888780', ink:'#2C2C2A'}
+};
+
+const C = [
+  ['CM111','Principles & Theories I',3,'cm',[],[]],
+  ['CM112','Principles & Theories 2',3,'cm',['CM111'],[]],
+  ['CM113','Principles & Theories 3',2,'cm',['CM111','CM112'],[]],
+  ['CM201','TCM Diagnosis I',3,'cm',['CM111','CM112'],[]],
+  ['CM202','Adv TCM Syndrome Diagnosis',3,'cm',['CM201'],[]],
+  ['CM301','TCM Internal Medicine I',3,'cm',['CM201','CM202','HM210','HM220','HM230'],['AC320']],
+  ['CM302','TCM Internal Medicine II',3,'cm',['CM201','CM202','HM210','HM220','HM230'],['AC320']],
+  ['CM400','Survey of TCM Specialties 1',3,'cm',['CM201','CM202','HM210','HM220','HM230'],['AC320']],
+  ['CM411','Survey of TCM Specialties 2',3,'cm',['CM201','CM202','HM210','HM220','HM230'],['AC320']],
+  ['CM420','Survey of TCM Classics 1',2,'cm',['CM201','CM202','HM210','HM220','HM230'],['AC320']],
+  ['CM421','Survey of TCM Classics 2 (SHL)',3,'cm',['CM201','CM202','HM210','HM220','HM230'],['AC320']],
+
+  ['HM100','Fund. of Chinese Herbology',1,'hm',[],[]],
+  ['HM101','Essential Single Herbs',1,'hm',[],['HM100','CM111']],
+  ['HM110','Herbal Materia Medica 1',3,'hm',['HM100','CM111'],[]],
+  ['HM120','Herbal Materia Medica 2',3,'hm',['HM100','CM111'],[]],
+  ['HM130','Herbal Materia Medica 3',3,'hm',['HM100','CM111'],[]],
+  ['HM111','Herb Lab Lv 1',1,'hm',[],['HM110']],
+  ['HM121','Herb Lab Lv 2',1,'hm',[],['HM120']],
+  ['HM210','Herbal Formulas 1',3,'hm',['HM101','HM110','HM120','HM130','CM201'],[]],
+  ['HM220','Herbal Formulas 2',3,'hm',['HM101','HM110','HM120','HM130','CM201'],[]],
+  ['HM230','Herbal Formulas 3',3,'hm',['HM101','HM110','HM120','HM130','CM201'],[]],
+  ['HM240','TCM Nutrition',2,'hm',['HM110','HM120','HM130','CM112'],[]],
+  ['HM310','Herbal Formula Construction',2,'hm',['CM201','CM202','HM210','HM220','HM230'],[]],
+  ['HM320','Herbal Patents & Ext. Medicines',2,'hm',['CM201','CM202','HM210','HM220','HM230'],[]],
+
+  ['AC100','Intro to Meridian Theory',2,'ac',[],[]],
+  ['AC201','Acupuncture 1',3,'ac',['AC100'],['WM151']],
+  ['AC202','Acupuncture 2',3,'ac',['AC100'],['WM151']],
+  ['AC203','Acupuncture 3',3,'ac',['AC100'],['WM151']],
+  ['AC220','Tuina & Acupressure',3,'ac',['AC100'],[]],
+  ['AC301','Acupuncture Techniques I',3,'ac',['AC201','AC202','AC203','CM111','CM112'],[]],
+  ['AC302','Acupuncture Techniques II',3,'ac',['AC301'],[]],
+  ['AC310','Auricular & Scalp Acupuncture',2,'ac',['AC301'],[]],
+  ['AC320','Acupuncture Point Therapeutics',3,'ac',['AC201','AC202','AC203','CM111','CM112'],[]],
+
+  ['WM110','Biology',2,'wm',[],[]],
+  ['WM120','Chemistry',2,'wm',[],[]],
+  ['WM130','Biochemistry',2,'wm',['WM110','WM120'],[]],
+  ['WM140','Physics',2,'wm',[],[]],
+  ['WM151','Anatomy & Physiology 1',3,'wm',[],[]],
+  ['WM152','Anatomy & Physiology 2',3,'wm',['WM151'],['WM110']],
+  ['WM153','Anatomy & Physiology 3',3,'wm',['WM151'],['WM110']],
+  ['WM160','General Psychology',2,'wm',[],[]],
+  ['WM211','Pathophysiology I',3,'wm',['WM151','WM152','WM153','WM130'],[]],
+  ['WM212','Pathophysiology II',3,'wm',['WM211'],[]],
+  ['WM220','Western Clinical Nutrition',3,'wm',['WM151','WM152','WM153','WM130'],[]],
+  ['WM230','History of Medicine',2,'wm',[],[]],
+  ['WM310','Western Physical Assessment',3,'wm',['WM211'],['WM212']],
+  ['WM321','Western Clinical Medicine 1',3,'wm',['WM211','WM212','WM310'],[]],
+  ['WM322','Western Clinical Medicine 2',3,'wm',['WM211','WM212','WM310'],[]],
+  ['WM330','Medical Imaging & Lab Diagnosis',2,'wm',['WM211','WM212'],[]],
+  ['WM340','Mental Wellness & Patient Care Psych.',2,'wm',['WM160'],[],[['CL310','CL400']]],
+  ['WM361','Integrative Pharmacology',3,'wm',['WM130','WM211','WM212'],[]],
+  ['WM370','Biomedical Acupuncture',1,'wm',[],[]],
+  ['WM420','Principles of Public Health',2,'wm',['WM211','WM212'],[],[['CL310','CL400']]],
+  ['WM431','Healthcare Law & Ethics',1,'wm',[],[],[['CL700','CL800']]],
+  ['WM432','Healthcare Business Management',2,'wm',[],['CL600']],
+
+  ['CL100','Intro to Patient Care',2,'cl',[],['CM201']],
+  ['CL310','Clinical Theater',1,'cl',['CL100'],[]],
+  ['CL400','Clinical Observation',1,'cl',['CL100'],[]],
+  ['CL600','Practice Internship Lv 1',2,'cl',['EX210','CL100','CM201','CM202','HM210','HM220','HM230','AC301','AC302','WM211','WM212','WM310'],[],[],['hours','certs','qi']],
+  ['CL700','Practice Internship Lv 2',2,'cl',['CL600'],[]],
+  ['CL800','Practice Internship Lv 3',2,'cl',['CL700'],[]],
+  ['CL880','Externship',1,'cl',['CL600'],[]],
+  ['CL611','Integrative Case Studies',1,'cl',[],['CL600']],
+  ['CL711','Integrative Case Studies',1,'cl',[],['CL700']],
+  ['CL811','Integrative Case Studies',1,'cl',[],['CL800']],
+
+  ['TO100','Taoism I',1,'tq',[],[]],
+  ['TO200','Taoism II: Natural Healing',1,'tq',['TO100'],[]],
+  ['TO300','Taoism III: Healthcare Practitioner',1,'tq',['TO100','TO200'],[]],
+  ['QC110','Self-Healing Qi Gong',1,'tq',[],[]],
+  ['QC120','Eight Treasures Qi Gong',1,'tq',[],[]],
+  ['QC140','Infinichi Qi Gong',1,'tq',[],[]],
+  ['QC252','Dao-In Qi Gong Level 3',1,'tq',[],[]],
+  ['EL346','Yang Style Tai Chi',1,'tq',[],[]],
+  ['EL357','Chen Style Tai Chi Sword',1,'tq',[],[]],
+
+  ['EX100','First Comprehensive Exam',1,'ex',['CM111','CM112','HM110','HM120','HM130','AC201','AC202','AC203','WM151','WM152','WM153'],[]],
+  ['EX210','Pre-clinical exams (EX210 · EX220)',2,'ex',['AC201','AC202','AC203','AC301','AC302','AC310','CM201','CM202','WM211','WM212','WM310','WM220','CL100'],[]],
+  ['EX300','Graduation Exam',1,'ex',['EX210','WM361','WM330','WM431','CL600'],[]],
+
+  ['PD340','Research',1,'pd',['CL100'],[]],
+  ['PD350','Taoist Acupuncture',1,'pd',['AC201','AC202','AC203'],[]],
+  ['PD410','Integrative Medicine I',1,'pd',[],['CL700']],
+  ['PD450','Patient Education & Counseling',1,'pd',['CL100','WM340'],[]]
+];
+
+const DB = {};
+C.forEach(r => DB[r[0]] = {
+  id:r[0], title:r[1], units:r[2], track:r[3],
+  pre:r[4]||[], co:r[5]||[], anyOf:r[6]||[], flags:r[7]||[]
+});
+
+const QI = ['QC110','QC120','QC140','QC252','EL346','EL357'];
+
+const MEET = {
+  CM111:'Th 9a-12p', CM112:'M 9a-12p', CM113:'Tu 9a-11a', CM201:'W 6p-9p', CM202:'Tu 5p-8p',
+  CM301:'Th 1p-4p', CM302:'M 2p-5p', CM400:'W 12p-3p', CM411:'Th 2p-5p', CM420:'M 2p-5p', CM421:'Th 9a-12p',
+  HM100:'Th 1p-3p', HM101:'W 10a-12p', HM110:'Tu 1p-4p', HM120:'M 6p-9p', HM130:'Tu 5p-8p | W 1p-4p',
+  HM210:'W 5p-8p | Tu 1p-4p', HM220:'W 9a-12p', HM230:'Th 9a-12p', HM240:'Tu 9a-12p',
+  HM310:'W 10a-12p', HM320:'M 9a-12p',
+  AC100:'M 10a-12p', AC201:'M 3p-6p | Th 9a-12p', AC202:'Th 12p-3p', AC203:'Th 1p-4p',
+  AC220:'W 1p-4p', AC301:'M 9a-12p | M 12p-3p', AC302:'M 1p-4p', AC310:'Th 3p-5p', AC320:'W 5p-8p',
+  WM110:'Tu 2p-4p', WM120:'M 1p-3p', WM130:'M 1p-3p', WM140:'Tu 6p-8p', WM151:'Tu 5p-8p',
+  WM152:'M 6p-9p', WM153:'W 9a-12p', WM160:'Tu 9a-11a', WM211:'Th 5p-8p', WM212:'Tu 1p-4p',
+  WM220:'W 6p-9p | M 8a-11a', WM230:'Tu 11a-1p', WM310:'Tu 9a-12p', WM321:'W 1p-4p', WM322:'M 5p-8p',
+  WM330:'W 4:30p-6:30p', WM340:'Tu 5p-7p', WM361:'Tu 9a-12p', WM370:'W 9a-11a', WM420:'Tu 12p-2p',
+  WM431:'Th 5p-8p', WM432:'M 6p-8p',
+  CL100:'W 1p-4p', CL310:'M 1p-4p | Tu 9a-12p', CL611:'W 10a-12p', CL711:'Tu 9a-12p', CL811:'M 12p-3p',
+  TO100:'M 9a-10a', TO200:'Th 9a-10a', TO300:'M 9a-10a',
+  QC110:'M 11a-12p', QC120:'Th 11a-12p', QC140:'M 10a-11a', QC252:'Tu 9a-10:30a',
+  EL346:'Th 6p-7p', EL357:'W 12p-1p',
+  PD340:'F 1p-4p', PD350:'Sa 8a-4:30p', PD410:'Sa 8a-4:30p', PD450:'F 9a-12p'
+};
+
+function mins(t){
+  const m = t.match(/^(\d{1,2})(?::(\d{2}))?([ap])$/);
+  if(!m) return null;
+  let h = +m[1] % 12;
+  if(m[3] === 'p') h += 12;
+  return h*60 + (m[2] ? +m[2] : 0);
+}
+const SLOTS = {};
+Object.entries(MEET).forEach(([id, str]) => {
+  SLOTS[id] = str.split('|').map(sec => {
+    const m = sec.trim().match(/^(M|Tu|W|Th|F|Sa)\s+(\S+)-(\S+)$/);
+    return m ? { day:m[1], a:mins(m[2]), b:mins(m[3]) } : null;
+  }).filter(Boolean);
+});
+
+function sectionsClash(x, y){
+  return x.day === y.day && x.a < y.b && y.a < x.b;
+}
+function conflicts(idA, idB){
+  const A = SLOTS[idA], B = SLOTS[idB];
+  if(!A || !B || !A.length || !B.length) return false;
+  return A.every(a => B.every(b => sectionsClash(a, b)));
+}
+function meetLabel(id){
+  return MEET[id] || 'time arranged';
+}
+
+function lerp(a, b, t){
+  const p = h => [1,3,5].map(i => parseInt(h.slice(i, i+2), 16));
+  const [r1,g1,b1] = p(a), [r2,g2,b2] = p(b);
+  const c = (u,v) => Math.round(u + (v-u)*t).toString(16).padStart(2,'0');
+  return `#${c(r1,r2)}${c(g1,g2)}${c(b1,b2)}`;
+}
+function impStyle(count, max){
+  if(!count) return 'background:#f2f3f1;border-color:#e3e5e2;color:#8d9997;font-weight:400';
+  const t = max > 1 ? Math.min(1, count/max) : 1;
+  const e = Math.pow(t, 0.7);
+  return `background:${lerp('#FAEEDA','#EF9F27',e)};border-color:${lerp('#FAC775','#854F0B',e)};color:${lerp('#854F0B','#412402',e)}`;
+}
+
+const GOALS = [
+  {id:'ALL',   name:'Whole program',        sub:'Everything on the Fall 2026 schedule'},
+  {id:'EX100', name:'First Comprehensive',  sub:'End of the foundational sequence'},
+  {id:'EX210', name:'Pre-clinical exams',   sub:'The gate into practice internship'},
+  {id:'EX300', name:'Graduation Exam',      sub:'Full path to the degree'}
+];
+
+let done = new Set();
+let plan = new Set();
+let extra = {hours:false, certs:false};
+let goal = 'ALL';
+let selected = null;
+
+const STORE_KEY = 'ysu-prereq';
+const SCHEMA = 1;
+let storageOk = true;
+let lastSaved = null;
+
+function snapshot(){
+  return {
+    app:'ysu-prereq-explorer',
+    v:SCHEMA,
+    saved:new Date().toISOString(),
+    done:[...done].sort(),
+    plan:[...plan].sort(),
+    extra:{ hours:!!extra.hours, certs:!!extra.certs }
+  };
+}
+
+function restore(obj){
+  if(!obj || typeof obj !== 'object') throw new Error('That file isn\'t readable.');
+  if(obj.app !== 'ysu-prereq-explorer') throw new Error('That isn\'t a progress file from this tool.');
+  if(typeof obj.v === 'number' && obj.v > SCHEMA) throw new Error('That file was saved by a newer version of this tool.');
+  const arr = x => Array.isArray(x) ? x : [];
+  const all = [...arr(obj.done), ...arr(obj.plan)];
+  const dropped = [...new Set(all.filter(id => !DB[id]))];
+  done  = new Set(arr(obj.done).filter(id => DB[id]));
+  plan  = new Set(arr(obj.plan).filter(id => DB[id]));
+  extra = { hours:!!(obj.extra && obj.extra.hours), certs:!!(obj.extra && obj.extra.certs) };
+  return { dropped, saved:obj.saved };
+}
+
+function storageAvailable(){
+  try{
+    localStorage.setItem('__probe','1');
+    localStorage.removeItem('__probe');
+    return true;
+  }catch(e){ return false; }
+}
+
+function save(){
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify(snapshot()));
+    lastSaved = new Date();
+    storageOk = true;
+  }catch(e){
+    storageOk = false;
+  }
+  renderSaveState();
+}
+
+function load(){
+  storageOk = storageAvailable();
+  if(!storageOk) return;
+  try{
+    const raw = localStorage.getItem(STORE_KEY) || localStorage.getItem('ysu-prereq-v1');
+    if(!raw) return;
+    const obj = JSON.parse(raw);
+    restore(obj);
+    lastSaved = obj.saved ? new Date(obj.saved) : null;
+  }catch(e){
+    /* corrupt entry — start clean rather than blocking the app */
+  }
+}
+
+function ago(d){
+  if(!d) return '';
+  const s = Math.round((Date.now() - d.getTime())/1000);
+  if(s < 60) return 'just now';
+  if(s < 3600) return `${Math.floor(s/60)} min ago`;
+  if(s < 86400) return `${Math.floor(s/3600)} hr ago`;
+  return d.toLocaleDateString();
+}
+
+function renderSaveState(){
+  const el = document.getElementById('save-state');
+  if(!el) return;
+  if(storageOk){
+    el.className = 'savestate';
+    el.innerHTML = `<span class="dot"></span><span>Saved in this browser${lastSaved ? ' · ' + ago(lastSaved) : ''}</span>`;
+  }else{
+    el.className = 'savestate warn';
+    el.innerHTML = `<span class="dot"></span><span>This browser is blocking storage — progress will be lost on reload. Back up to a file.</span>`;
+  }
+}
+
+function ioMsg(text, bad){
+  const el = document.getElementById('io-msg');
+  if(!el) return;
+  el.innerHTML = text ? `<div class="banner ${bad?'no':'ok'}" style="margin-top:8px">${text}</div>` : '';
+  if(text && !bad) setTimeout(() => { if(el.textContent.includes(text.slice(0,12))) el.innerHTML = ''; }, 6000);
+}
+
+function exportFile(){
+  try{
+    const blob = new Blob([JSON.stringify(snapshot(), null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ysu-progress-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    ioMsg(`Backed up ${done.size} completed and ${plan.size} planned course${plan.size===1?'':'s'}.`);
+  }catch(e){
+    ioMsg('Couldn\'t create the file — try a different browser.', true);
+  }
+}
+
+function importFile(file){
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      const { dropped, saved } = restore(JSON.parse(r.result));
+      save(); paint(); renderAll(); focus(null);
+      const when = saved ? new Date(saved).toLocaleDateString() : 'an earlier session';
+      ioMsg(`Restored from ${when}.` +
+        (dropped.length ? ` ${dropped.length} unrecognised course code${dropped.length===1?'':'s'} skipped: ${dropped.join(', ')}.` : ''));
+    }catch(e){
+      ioMsg(e.message, true);
+    }
+  };
+  r.onerror = () => ioMsg('Couldn\'t read that file.', true);
+  r.readAsText(file);
+}
+
+function qiUnits(){
+  return QI.filter(q => done.has(q)).reduce((a,q) => a + DB[q].units, 0);
+}
+function flagOk(f){
+  if(f === 'qi') return qiUnits() >= 4;
+  return !!extra[f];
+}
+function ready(id){
+  const n = DB[id];
+  if(!n) return false;
+  if(!n.pre.every(p => done.has(p))) return false;
+  if(!n.anyOf.every(g => g.some(p => done.has(p)))) return false;
+  if(!n.flags.every(flagOk)) return false;
+  return true;
+}
+function ancestors(id, acc){
+  acc = acc || new Set();
+  const n = DB[id];
+  if(!n) return acc;
+  [...n.pre, ...n.co, ...n.anyOf.flat()].forEach(p => {
+    if(DB[p] && !acc.has(p)){ acc.add(p); ancestors(p, acc); }
+  });
+  return acc;
+}
+function scope(){
+  if(goal === 'ALL') return new Set(Object.keys(DB));
+  const s = ancestors(goal); s.add(goal); return s;
+}
+
+const DESC = {};
+function descendants(id){
+  if(DESC[id]) return DESC[id];
+  const acc = new Set();
+  const walk = x => Object.values(DB).forEach(m => {
+    if(acc.has(m.id)) return;
+    if(m.pre.includes(x) || m.co.includes(x) || m.anyOf.some(g => g.includes(x))){
+      acc.add(m.id); walk(m.id);
+    }
+  });
+  walk(id);
+  DESC[id] = acc;
+  return acc;
+}
+
+function impact(id, s){
+  const d = [...descendants(id)].filter(x => s.has(x) && !done.has(x));
+  return { count:d.length, units:d.reduce((a,x) => a + DB[x].units, 0) };
+}
+
+const els = [];
+Object.values(DB).forEach(n => els.push({data:{id:n.id, label:`${n.id}\n${n.title}\n${n.units} unit${n.units>1?'s':''}`, track:n.track}}));
+Object.values(DB).forEach(n => {
+  n.pre.forEach(p => DB[p] && els.push({data:{id:`${p}->${n.id}`, source:p, target:n.id, kind:'hard'}}));
+  n.co.forEach(p => DB[p] && els.push({data:{id:`${p}~>${n.id}`, source:p, target:n.id, kind:'co'}}));
+  n.anyOf.forEach(g => g.forEach(p => DB[p] && els.push({data:{id:`${p}?>${n.id}`, source:p, target:n.id, kind:'co'}})));
+});
+
+const cy = cytoscape({
+  container: document.getElementById('cy'),
+  elements: els,
+  wheelSensitivity: 0.25,
+  minZoom: 0.1,
+  maxZoom: 1.4,
+  style: [
+    { selector:'node', style:{
+        'shape':'round-rectangle','width':148,'height':56,
+        'background-color':ele => TRACKS[ele.data('track')].bg,
+        'border-width':1,'border-color':ele => TRACKS[ele.data('track')].line,
+        'label':'data(label)','text-wrap':'wrap','text-max-width':132,
+        'text-valign':'center','text-halign':'center',
+        'font-size':10.5,'line-height':1.28,
+        'color':ele => TRACKS[ele.data('track')].ink,
+        'transition-property':'opacity, border-width, background-color','transition-duration':'140ms'
+    }},
+    { selector:'node.done', style:{
+        'background-color':ele => TRACKS[ele.data('track')].line,
+        'color':'#ffffff','border-color':ele => TRACKS[ele.data('track')].ink
+    }},
+    { selector:'node.ready', style:{ 'border-width':3.5,'border-color':'#0f6e56' }},
+    { selector:'node.pick',  style:{ 'border-width':4,'border-color':'#16211f' }},
+    { selector:'node.dim',   style:{ 'opacity':0.12 }},
+    { selector:'node.hide',  style:{ 'display':'none' }},
+    { selector:'edge', style:{
+        'width':1.2,'line-color':'#b9c0be','target-arrow-color':'#b9c0be',
+        'target-arrow-shape':'triangle','arrow-scale':0.75,
+        'curve-style':'bezier','opacity':0.75,
+        'transition-property':'opacity, line-color, width','transition-duration':'140ms'
+    }},
+    { selector:'edge[kind="co"]', style:{ 'line-style':'dashed','line-dash-pattern':[5,4] }},
+    { selector:'edge.up',   style:{ 'line-color':'#0f6e56','target-arrow-color':'#0f6e56','width':2.2,'opacity':1 }},
+    { selector:'edge.down', style:{ 'line-color':'#BA7517','target-arrow-color':'#BA7517','width':2.2,'opacity':1 }},
+    { selector:'edge.dim',  style:{ 'opacity':0.06 }},
+    { selector:'edge.hide', style:{ 'display':'none' }}
+  ]
+});
+
+function relayout(){
+  cy.layout({
+    name:'dagre', rankDir:'LR', nodeSep:26, rankSep:110, edgeSep:12,
+    fit:true, padding:34, animate:false,
+    nodeDimensionsIncludeLabels:false
+  }).run();
+}
+
+function applyGoal(){
+  const s = scope();
+  cy.batch(() => {
+    cy.nodes().forEach(n => n.toggleClass('hide', !s.has(n.id())));
+    cy.edges().forEach(e => e.toggleClass('hide',
+      !s.has(e.source().id()) || !s.has(e.target().id())));
+  });
+  relayout();
+}
+
+function paint(){
+  cy.batch(() => {
+    cy.nodes().forEach(n => {
+      const id = n.id();
+      n.toggleClass('done', done.has(id));
+      n.toggleClass('ready', !done.has(id) && ready(id));
+    });
+  });
+}
+
+const READ_ZOOM = 1.05;
+
+function fitAll(){
+  const vis = cy.nodes().filter(n => !n.hasClass('hide'));
+  if(vis.length) cy.animate({ fit:{ eles:vis, padding:34 } }, { duration:300, easing:'ease-out' });
+}
+
+function frameLineage(target, eles, pad){
+  const vis = eles.filter(e => !e.hasClass('hide'));
+  if(!vis.length) return;
+  const bb = vis.boundingBox();
+  const wz = (cy.width()  - 2*pad) / Math.max(bb.w, 1);
+  const hz = (cy.height() - 2*pad) / Math.max(bb.h, 1);
+  const natural = Math.min(wz, hz);
+  const zoom = Math.min(cy.maxZoom(), Math.max(natural, READ_ZOOM));
+  const anchor = zoom > natural ? target : vis;
+  cy.animate({ zoom:zoom, center:{ eles:anchor } }, { duration:300, easing:'ease-out' });
+}
+
+function focus(id){
+  selected = id;
+  cy.elements().removeClass('dim up down pick');
+  if(!id){
+    renderDetail();
+    fitAll();
+    return;
+  }
+  const node = cy.$id(id);
+  if(!node.length || node.hasClass('hide')){ selected = null; renderDetail(); return; }
+  const up = node.predecessors();
+  const dn = node.successors();
+  const keep = up.union(dn).union(node);
+  cy.elements().difference(keep).addClass('dim');
+  up.edges().addClass('up');
+  dn.edges().addClass('down');
+  node.addClass('pick');
+  renderDetail();
+  frameLineage(node, keep.nodes(), 55);
+}
+
+function statusMark(id){
+  return done.has(id) ? '<span class="tick">✓</span>' : '<span class="cross">○</span>';
+}
+
+function renderDetail(){
+  const box = document.getElementById('detail');
+  if(!selected){
+    box.innerHTML = '<h2>Course detail</h2><p class="note">Select a node in the graph, or search above.</p>';
+    return;
+  }
+  const n = DB[selected], t = TRACKS[n.track];
+  const unlocks = Object.values(DB).filter(m =>
+    m.pre.includes(n.id) || m.co.includes(n.id) || m.anyOf.some(g => g.includes(n.id)));
+  const reqRows = [
+    ...n.pre.map(p => ({id:p, tag:'required'})),
+    ...n.co.map(p => ({id:p, tag:'concurrent ok'})),
+    ...n.anyOf.map(g => ({id:g.join(' or '), tag:'one of', ok:g.some(x => done.has(x))}))
+  ];
+  const flagRows = n.flags.map(f => ({
+    label: f==='hours' ? '150 hrs theater & observation'
+         : f==='certs' ? 'CPR, first aid, CNT certs'
+         : `4 units qi cultivation (have ${qiUnits()})`,
+    ok: flagOk(f)
+  }));
+  box.innerHTML = `
+    <h2>Course detail</h2>
+    <h3>${n.id} · ${n.title}</h3>
+    <div class="dsub">${n.units} unit${n.units>1?'s':''} · ${meetLabel(n.id)}</div>
+    <span class="pill" style="background:${t.bg};border-color:${t.line};color:${t.ink}">${t.name}</span>
+    ${done.has(n.id) ? '<span class="pill" style="background:#e1f5ee;border-color:#0f6e56;color:#04342C">completed</span>'
+      : ready(n.id) ? '<span class="pill" style="background:#e1f5ee;border-color:#0f6e56;color:#04342C">ready to take</span>'
+      : '<span class="pill" style="background:#faeeda;border-color:#BA7517;color:#412402">blocked</span>'}
+    <div style="margin:12px 0;display:flex;gap:7px">
+      <button class="btn ${done.has(n.id)?'off':''}" id="toggle">
+        ${done.has(n.id) ? 'Mark not completed' : 'Mark completed'}
+      </button>
+      <button class="btn off" id="plan-btn">
+        ${plan.has(n.id) ? 'Remove from plan' : 'Add to plan'}
+      </button>
+    </div>
+    <h2 style="margin-top:16px">Needs (${reqRows.length + flagRows.length})</h2>
+    <div class="list">${
+      (reqRows.length + flagRows.length) === 0 ? '<div class="empty">No prerequisites.</div>' :
+      reqRows.map(r => `<div class="row" data-go="${DB[r.id]?r.id:''}">
+        <span class="code">${'ok' in r ? (r.ok?'<span class="tick">✓</span>':'<span class="cross">○</span>') : statusMark(r.id)} ${r.id}</span>
+        <span class="nm">${r.tag}</span></div>`).join('') +
+      flagRows.map(r => `<div class="row" style="cursor:default">
+        <span class="code">${r.ok?'<span class="tick">✓</span>':'<span class="cross">○</span>'} —</span>
+        <span class="nm">${r.label}</span></div>`).join('')
+    }</div>
+    <h2 style="margin-top:16px">Unlocks (${unlocks.length})</h2>
+    <div class="list">${
+      unlocks.length === 0 ? '<div class="empty">Nothing depends on this course.</div>' :
+      unlocks.map(m => `<div class="row" data-go="${m.id}">
+        <span class="code">${m.id}</span>
+        <span class="nm">${m.title}</span></div>`).join('')
+    }</div>`;
+  const btn = document.getElementById('toggle');
+  if(btn) btn.onclick = () => {
+    done.has(n.id) ? done.delete(n.id) : done.add(n.id);
+    if(done.has(n.id)) plan.delete(n.id);
+    save(); paint(); renderAll();
+  };
+  const pb = document.getElementById('plan-btn');
+  if(pb) pb.onclick = () => togglePlan(n.id);
+  box.querySelectorAll('[data-go]').forEach(el => {
+    const id = el.getAttribute('data-go');
+    if(id) el.onclick = () => focus(id);
+  });
+}
+
+function renderGoals(){
+  document.getElementById('goals').innerHTML = GOALS.map(g => {
+    let bar = '';
+    if(g.id !== 'ALL'){
+      const need = [...ancestors(g.id)].filter(x => DB[x]);
+      const got = need.filter(x => done.has(x)).length;
+      const pct = need.length ? Math.round(100*got/need.length) : 0;
+      const units = need.reduce((a,x) => a + DB[x].units, 0);
+      const gotU = need.filter(x => done.has(x)).reduce((a,x) => a + DB[x].units, 0);
+      bar = `<div class="bar"><i style="width:${pct}%"></i></div>
+             <div class="stat"><span><b>${got}</b> of ${need.length} courses</span>
+             <span>${gotU} / ${units} units</span></div>`;
+    }
+    return `<button class="goal ${goal===g.id?'on':''}" data-g="${g.id}">
+      <span class="gt">${g.name}</span><div class="gs">${g.sub}</div>${bar}</button>`;
+  }).join('');
+  document.querySelectorAll('[data-g]').forEach(b => b.onclick = () => {
+    goal = b.getAttribute('data-g');
+    applyGoal();
+    paint();
+    if(selected && cy.$id(selected).hasClass('hide')) selected = null;
+    renderAll();
+    focus(selected);
+  });
+}
+
+function rankedReady(){
+  const s = scope();
+  return Object.values(DB)
+    .filter(n => s.has(n.id) && !done.has(n.id) && ready(n.id))
+    .map(n => ({ n, i:impact(n.id, s) }))
+    .sort((a,b) =>
+      b.i.count - a.i.count ||
+      b.i.units - a.i.units ||
+      b.n.units - a.n.units ||
+      a.n.id.localeCompare(b.n.id));
+}
+
+function assignSections(ids){
+  const timed = ids.filter(id => SLOTS[id] && SLOTS[id].length);
+  const out = {};
+  function bt(i){
+    if(i === timed.length) return true;
+    const id = timed[i];
+    for(const sec of SLOTS[id]){
+      let ok = true;
+      for(let j = 0; j < i; j++){
+        if(sectionsClash(sec, out[timed[j]])){ ok = false; break; }
+      }
+      if(ok){ out[id] = sec; if(bt(i+1)) return true; }
+    }
+    delete out[id];
+    return false;
+  }
+  return bt(0) ? out : null;
+}
+
+function clashPairs(ids){
+  const out = [];
+  for(let i = 0; i < ids.length; i++)
+    for(let j = i+1; j < ids.length; j++)
+      if(conflicts(ids[i], ids[j])) out.push([ids[i], ids[j]]);
+  return out;
+}
+
+function togglePlan(id){
+  plan.has(id) ? plan.delete(id) : plan.add(id);
+  save(); renderPlan(); renderReady(); renderDetail();
+}
+
+const DAYS = ['M','Tu','W','Th','F','Sa'];
+const DAY_START = 480, DAY_END = 1260;
+
+function renderWeek(ids, assign){
+  const wk = document.getElementById('week');
+  const timed = ids.filter(id => SLOTS[id] && SLOTS[id].length);
+  if(!timed.length){ wk.className = 'wk'; wk.innerHTML = ''; return; }
+  wk.className = 'wk on';
+  const span = DAY_END - DAY_START;
+  const hours = [];
+  for(let h = 8; h <= 20; h += 2)
+    hours.push(`<i style="top:${100*(h*60-DAY_START)/span}%">${h>12?h-12:h}${h>=12?'p':'a'}</i>`);
+  const placed = timed.map(id => ({ id, sec: (assign && assign[id]) || SLOTS[id][0] }));
+  const cols = DAYS.map(d => {
+    const here = placed.filter(p => p.sec.day === d);
+    return `<div class="wk-col">` + here.map(p => {
+      const t = TRACKS[DB[p.id].track];
+      const bad = here.some(q => q !== p && sectionsClash(p.sec, q.sec));
+      return `<div class="blk ${bad?'clash':''}" style="top:${100*(p.sec.a-DAY_START)/span}%;height:${100*(p.sec.b-p.sec.a)/span}%;background:${t.bg};border-color:${t.line};color:${t.ink}" title="${p.id} · ${DB[p.id].title}">${p.id}</div>`;
+    }).join('') + `</div>`;
+  }).join('');
+  wk.innerHTML =
+    `<div class="wk-head"><span></span>${DAYS.map(d => `<span>${d}</span>`).join('')}</div>
+     <div class="wk-body"><div class="wk-hours">${hours.join('')}</div><div class="wk-cols">${cols}</div></div>`;
+}
+
+function renderPlan(){
+  const ids = [...plan].filter(id => DB[id]);
+  const box = document.getElementById('plan');
+  const status = document.getElementById('plan-status');
+  const units = ids.reduce((a,id) => a + DB[id].units, 0);
+  document.getElementById('plan-count').textContent = ids.length ? `${units} units` : '';
+
+  if(!ids.length){
+    box.innerHTML = '<div class="empty">Empty. Add courses with + to check them for conflicts.</div>';
+    status.innerHTML = '';
+    renderWeek([], null);
+    return;
+  }
+
+  const assign = assignSections(ids);
+  const hard = clashPairs(ids);
+  const inClash = new Set(hard.flat());
+
+  box.innerHTML = ids.map(id => {
+    const n = DB[id];
+    const notReady = !done.has(id) && !ready(id);
+    return `<div class="row ${inClash.has(id)?'bad':''}">
+      <span class="code" data-go="${id}">${id}</span>
+      <span class="nm">${meetLabel(id)} · ${n.units}u</span>
+      ${notReady ? '<span class="warn-dot" title="Prerequisites not yet marked complete">&#9650;</span>' : ''}
+      <button class="add in" data-drop="${id}" title="Remove from plan">&times;</button>
+    </div>`;
+  }).join('');
+
+  let msg;
+  if(hard.length){
+    msg = `<div class="banner no"><b>Time conflict</b><ul>` +
+      hard.map(([a,b]) => `<li>${a} and ${b} — ${meetLabel(a)}</li>`).join('') + `</ul></div>`;
+  } else if(!assign){
+    msg = `<div class="banner no"><b>Sections can't all be reconciled</b> — every combination leaves an overlap somewhere. Drop one course.</div>`;
+  } else {
+    const flex = ids.filter(id => SLOTS[id] && SLOTS[id].length > 1).length;
+    msg = `<div class="banner ok"><b>No conflicts</b> · ${units} units` +
+      (units < 8 ? ' — below the 8-unit part-time floor' :
+       units < 12 ? ' — below the 12-unit full-time floor' :
+       units > 20 ? " — over 20 units, needs Dean's approval" : '') +
+      (flex ? `<br>${flex} course${flex===1?' has':'s have'} two sections; the grid shows a combination that works.` : '') +
+      `</div>`;
+  }
+  status.innerHTML = msg;
+  renderWeek(ids, assign);
+
+  box.querySelectorAll('[data-drop]').forEach(b =>
+    b.onclick = () => togglePlan(b.getAttribute('data-drop')));
+  box.querySelectorAll('[data-go]').forEach(el =>
+    el.onclick = () => focus(el.getAttribute('data-go')));
+}
+
+function renderReady(){
+  const list = rankedReady();
+  const max = list.length ? list[0].i.count : 0;
+  document.getElementById('ready').innerHTML = list.length
+    ? list.map(({n,i}) => `<div class="row">
+        <span class="code" data-go="${n.id}">${n.id}</span>
+        <span class="nm" data-go="${n.id}">${n.title}</span>
+        <span class="imp" style="${impStyle(i.count, max)}" title="Unlocks ${i.count} further course${i.count===1?'':'s'} toward this goal">${i.count}</span>
+        <button class="add ${plan.has(n.id)?'in':''}" data-add="${n.id}" title="${plan.has(n.id)?'Remove from plan':'Add to plan'}">${plan.has(n.id)?'&#10003;':'+'}</button>
+      </div>`).join('')
+    : '<div class="empty">Nothing unlocked yet — start marking off what you\'ve finished.</div>';
+  document.querySelectorAll('#ready [data-go]').forEach(el =>
+    el.onclick = () => focus(el.getAttribute('data-go')));
+  document.querySelectorAll('#ready [data-add]').forEach(b =>
+    b.onclick = e => { e.stopPropagation(); togglePlan(b.getAttribute('data-add')); });
+  document.getElementById('qi-note').textContent =
+    `Qi cultivation: ${qiUnits()} of 4 units complete — counts QC and tai chi courses you've marked off.`;
+}
+
+function renderLegend(){
+  document.getElementById('legend').innerHTML = Object.entries(TRACKS).map(([k,t]) =>
+    `<span class="lg" style="background:${t.bg};border-color:${t.line};color:${t.ink}">${t.name}</span>`).join('');
+}
+
+function renderAll(){ renderGoals(); renderPlan(); renderReady(); renderDetail(); }
+
+cy.on('tap','node', e => focus(e.target.id()));
+cy.on('tap', e => { if(e.target === cy) focus(null); });
+
+document.getElementById('search').addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase();
+  if(!q){ focus(null); return; }
+  const hit = Object.values(DB).find(n =>
+    n.id.toLowerCase().startsWith(q) || n.title.toLowerCase().includes(q));
+  if(hit && cy.$id(hit.id).length && !cy.$id(hit.id).hasClass('hide')) focus(hit.id);
+});
+
+['hours','certs'].forEach(f => {
+  const el = document.getElementById('req-'+f);
+  el.onchange = () => { extra[f] = el.checked; save(); paint(); renderAll(); };
+});
+document.getElementById('export').onclick = exportFile;
+document.getElementById('import').onclick = () => document.getElementById('file').click();
+document.getElementById('file').onchange = e => {
+  const f = e.target.files && e.target.files[0];
+  if(f) importFile(f);
+  e.target.value = '';
+};
+document.getElementById('reset').onclick = () => {
+  if(done.size + plan.size && !confirm('Clear all completed courses and your plan? Back up to a file first if you want to keep it.')) return;
+  done = new Set(); plan = new Set(); extra = {hours:false, certs:false};
+  document.getElementById('req-hours').checked = false;
+  document.getElementById('req-certs').checked = false;
+  save(); paint(); renderAll(); focus(null);
+};
+
+load();
+document.getElementById('req-hours').checked = extra.hours;
+document.getElementById('req-certs').checked = extra.certs;
+renderLegend();
+applyGoal();
+paint();
+renderAll();
+renderSaveState();
+setInterval(renderSaveState, 60000);
+</script>
+
+</body>
+</html>
