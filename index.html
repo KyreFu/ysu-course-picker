@@ -110,6 +110,7 @@
   .chk{display:flex;align-items:flex-start;gap:8px;font-size:13px;margin-bottom:7px;cursor:pointer}
   .chk input{margin:3px 0 0;accent-color:var(--accent);flex:none}
   .list{max-height:190px;overflow-y:auto;border:1px solid var(--rule);border-radius:7px;padding:8px 10px}
+  .list.tall{max-height:46vh}
   .row{
     display:flex;justify-content:space-between;gap:8px;align-items:baseline;
     padding:4px 0;font-size:12.5px;border-bottom:1px solid #f0f1ef;cursor:pointer;
@@ -146,9 +147,15 @@
   .tick{color:var(--accent);font-weight:600}
   .cross{color:var(--ink-3)}
   @media (max-width:900px){
-    main{flex-direction:column}
-    aside,aside.left{width:auto;border:none;border-top:1px solid var(--rule);max-height:44vh}
-    #cy{min-height:52vh}
+    /* main becomes the scroll container: stacked panes are taller than the
+       viewport, and body is overflow:hidden, so without this the right
+       panel is clipped off the bottom and unreachable. */
+    main{flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch}
+    aside,aside.left{
+      width:auto;flex:none;max-height:none;
+      border:none;border-top:1px solid var(--rule);
+    }
+    #cy{flex:none;height:60vh}
   }
 </style>
 </head>
@@ -208,6 +215,11 @@
     <div class="sec">
       <h2>Find a course</h2>
       <input type="search" id="search" placeholder="Code or title — e.g. HM210, pathophys" autocomplete="off">
+    </div>
+    <div class="sec" id="browse">
+      <h2>Courses <span id="browse-count" class="tally"></span></h2>
+      <div class="list tall" id="courselist"></div>
+      <p class="note" style="margin:7px 0 0">Everything the selected goal requires. Click one for its detail. <span class="tick">✓</span> done, <span class="tick">○</span> ready, <span class="cross">○</span> blocked.</p>
     </div>
     <div class="sec det" id="detail"></div>
     <div class="sec">
@@ -423,6 +435,7 @@ let plan = new Set();
 let extra = {hours:false, certs:false};
 let goal = 'ALL';
 let selected = null;
+let query = '';
 
 const STORE_KEY = 'ysu-prereq';
 const SCHEMA = 1;
@@ -691,6 +704,15 @@ function frameLineage(target, eles, pad){
   cy.animate({ zoom:zoom, center:{ eles:anchor } }, { duration:300, easing:'ease-out' });
 }
 
+const narrow = () => window.matchMedia('(max-width:900px)').matches;
+
+// Stacked on a phone the right panel sits below the graph, so a course selected
+// from the graph would open its detail off-screen. Bring it up.
+function revealDetail(){
+  if(narrow()) document.getElementById('detail')
+    .scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
 function focus(id){
   selected = id;
   cy.elements().removeClass('dim up down pick');
@@ -709,6 +731,7 @@ function focus(id){
   dn.edges().addClass('down');
   node.addClass('pick');
   renderDetail();
+  revealDetail();
   frameLineage(node, keep.nodes(), 55);
 }
 
@@ -716,12 +739,53 @@ function statusMark(id){
   return done.has(id) ? '<span class="tick">✓</span>' : '<span class="cross">○</span>';
 }
 
+function browseMark(id){
+  if(done.has(id)) return '<span class="tick">✓</span>';
+  return ready(id) ? '<span class="tick">○</span>' : '<span class="cross">○</span>';
+}
+
+// Courses the current goal requires, narrowed by the search box. Searching is
+// scoped to the goal on purpose: anything outside it has no node to focus.
+function matches(){
+  const ids = [...scope()].filter(id => DB[id]).filter(id => {
+    if(!query) return true;
+    const n = DB[id];
+    return id.toLowerCase().includes(query)
+      || n.title.toLowerCase().includes(query)
+      || TRACKS[n.track].name.toLowerCase().includes(query);
+  });
+  return ids.sort((a,b) => a.localeCompare(b)).map(id => DB[id]);
+}
+
+function renderBrowse(){
+  const list = matches();
+  const box = document.getElementById('courselist');
+  document.getElementById('browse-count').textContent = query
+    ? `${list.length} match${list.length===1?'':'es'}`
+    : `${list.length} course${list.length===1?'':'s'}`;
+  box.innerHTML = list.length
+    ? list.map(n => `<div class="row" data-go="${n.id}">
+        <span class="code">${browseMark(n.id)} ${n.id}</span>
+        <span class="nm">${n.title}</span>
+      </div>`).join('')
+    : `<div class="empty">${query
+        ? 'Nothing matches inside this goal — try the Whole program goal.'
+        : 'Nothing in scope.'}</div>`;
+  box.querySelectorAll('[data-go]').forEach(el =>
+    el.onclick = () => focus(el.getAttribute('data-go')));
+}
+
 function renderDetail(){
   const box = document.getElementById('detail');
+  const browse = document.getElementById('browse');
   if(!selected){
-    box.innerHTML = '<h2>Course detail</h2><p class="note">Select a node in the graph, or search above.</p>';
+    browse.style.display = '';
+    box.style.display = 'none';
+    renderBrowse();
     return;
   }
+  browse.style.display = 'none';
+  box.style.display = '';
   const n = DB[selected], t = TRACKS[n.track];
   const unlocks = Object.values(DB).filter(m =>
     m.pre.includes(n.id) || m.co.includes(n.id) || m.anyOf.some(g => g.includes(n.id)));
@@ -737,6 +801,7 @@ function renderDetail(){
     ok: flagOk(f)
   }));
   box.innerHTML = `
+    <button class="lnk" id="back" style="margin-bottom:10px">&larr; All courses</button>
     <h2>Course detail</h2>
     <h3>${n.id} · ${n.title}</h3>
     <div class="dsub">${n.units} unit${n.units>1?'s':''} · ${meetLabel(n.id)}</div>
@@ -769,6 +834,8 @@ function renderDetail(){
         <span class="code">${m.id}</span>
         <span class="nm">${m.title}</span></div>`).join('')
     }</div>`;
+  const back = document.getElementById('back');
+  if(back) back.onclick = () => focus(null);
   const btn = document.getElementById('toggle');
   if(btn) btn.onclick = () => toggleDone(n.id);
   const pb = document.getElementById('plan-btn');
@@ -989,11 +1056,12 @@ cy.on('tap','node', e => {
 cy.on('tap', e => { if(e.target === cy) focus(null); });
 
 document.getElementById('search').addEventListener('input', e => {
-  const q = e.target.value.trim().toLowerCase();
-  if(!q){ focus(null); return; }
-  const hit = Object.values(DB).find(n =>
-    n.id.toLowerCase().startsWith(q) || n.title.toLowerCase().includes(q));
-  if(hit && cy.$id(hit.id).length && !cy.$id(hit.id).hasClass('hide')) focus(hit.id);
+  query = e.target.value.trim().toLowerCase();
+  const hits = matches();
+  // A single match is unambiguous — go straight to its detail.
+  if(query && hits.length === 1){ focus(hits[0].id); return; }
+  // Otherwise show the results list, leaving any open detail behind.
+  if(selected) focus(null); else renderDetail();
 });
 
 ['hours','certs'].forEach(f => {

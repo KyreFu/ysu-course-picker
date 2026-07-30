@@ -32,7 +32,7 @@ Two things aren't courses and get their own checkboxes on the left: the 150 hour
 
 ### Pick a goal
 
-Four options in the top left. Each filters the graph down to just what that goal requires and shows a progress bar.
+Four options in the top left. Each filters the graph down to just what that goal requires, lists those courses in the right panel, and shows a progress bar.
 
 | Goal | Prerequisite courses |
 |---|---|
@@ -66,6 +66,18 @@ An amber ▲ next to a planned course means its prerequisites aren't marked comp
 Click any node. The graph dims to that course's lineage: prerequisites behind it in green, what it unlocks ahead in amber. The view zooms in far enough to stay readable, so long chains run off-screen — drag to follow, or click empty space to zoom back out.
 
 The right panel lists **Needs** and **Unlocks** with ✓ / ○ against each. Both are clickable, which is usually a faster way to walk a long chain than tracing it visually.
+
+### Browse or search the course list
+
+The right panel has two layers. By default it lists every course the selected goal requires, sorted by code, with a status mark against each: green ✓ done, green ○ ready to take, grey ○ still blocked. Change the goal and the list changes with it. Click any row for that course's detail — the same panel you get by clicking its node — and **← All courses** goes back.
+
+Searching filters that list. Type a partial code, a word from a title, or a track name and you get everything close to it; when only one course matches, it opens that course's detail directly instead of making you click a list of one.
+
+Search is scoped to the selected goal, because a course outside the goal has no node on the graph to select. If something you expect is missing, switch to **Whole program**.
+
+### On a phone
+
+The three panes stack — left panel, graph, right panel — and the page scrolls. Selecting a course scrolls its detail into view for you, since the right panel is below the graph at that width. The graph is still the awkward part on a small screen; the course list is usually the faster way around.
 
 ## Saving your progress
 
