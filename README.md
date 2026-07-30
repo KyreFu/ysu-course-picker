@@ -59,6 +59,8 @@ The plan checks for time conflicts and shows a week grid of the result. Conflict
 
 Courses with arranged times (internships, observation, herb labs, exams) sit in the list but not the grid, and never count as conflicts.
 
+Blocks in the grid are clickable — click one for that course's detail in the right panel, the same as clicking its node or its row in the course list. Useful when a conflict is flagged and you want to see what each side of it actually needs.
+
 An amber ▲ next to a planned course means its prerequisites aren't marked complete. Not a block — concurrent enrolment is often legitimate here — just worth a second look.
 
 ### Trace a chain
