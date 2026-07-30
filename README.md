@@ -6,15 +6,30 @@ An interactive map of the Fall 2026 MAcCHM / DAcCHM course prerequisites, built 
 - Which courses unblock the most of what's left?
 - How far am I from each benchmark exam?
 
-Single HTML file, no install, no account. Open it in a browser.
+No install, no account, no build step. Open the link in a browser.
 
 ## Getting started
 
-Download `index.html` and double-click it. It opens in your default browser.
+Visit the address it's published at. That's all — there's nothing to download.
 
-**Keep it in one place.** Progress is saved per file location, so moving the file after you've entered data makes it look like the data vanished. Pick a folder — Documents, not Downloads — and leave it there. See [Saving your progress](#saving-your-progress).
+**It can't be run by double-clicking a downloaded copy.** The page reads its data from the `data/` folder next to it, and browsers block a `file://` page from reading local files. Opening a downloaded `index.html` shows a short "course data didn't load" page instead of the app. It has to be served over http.
 
 **It needs internet on first load.** The graph library (Cytoscape.js) loads from a CDN. Offline, you'll get an empty canvas.
+
+### If you used a downloaded copy before
+
+Progress is stored per web address, so it does not follow you from a local file to the hosted version. Nothing is lost, but it is stranded until you move it across, once:
+
+1. Open your old local copy and click **Back up to file**.
+2. Open the hosted version and click **Restore from file**.
+
+After that the hosted copy is the one that matters.
+
+## Deploying it
+
+Upload `index.html`, `validate.html` and the `data/` folder to any web server. There is no build step and nothing to compile.
+
+To publish a new term, replace the class file in `data/` and point `data/terms.json` at it. Nothing else changes, and no one has to download anything again. Run `validate.html` first — see [Checking the data](#checking-the-data).
 
 ## Using it
 
@@ -87,9 +102,9 @@ Two layers, because the automatic one isn't sufficient on its own.
 
 **Automatic.** Everything saves to browser storage on every change. The left panel shows a green dot and the time of the last save. If your browser blocks storage — private browsing, some sandboxed previews — the dot turns amber and says so.
 
-Browser storage is tied to the file's location and to that one browser. It doesn't follow you to another device, another browser, or a moved file.
+Browser storage is tied to the web address and to that one browser. It doesn't follow you to another device or another browser — and it doesn't carry over from a downloaded copy you may have used before, since that's a different address.
 
-**Backup file.** **Back up to file** downloads a small JSON file. **Restore from file** reads it back. This is what survives moving the file, switching devices, or reinstalling a browser.
+**Backup file.** **Back up to file** downloads a small JSON file. **Restore from file** reads it back. This is what survives switching devices, changing address, or reinstalling a browser.
 
 Back up at the end of each registration period. The automatic layer handles day to day; the file is the only copy that's actually yours.
 
@@ -116,15 +131,17 @@ Nothing is hidden by this. **Needs** in the detail panel lists every requirement
 
 ## Where the data comes from
 
-Fall 2026 Course Schedule, version 2, dated 24 July 2026, published at yosan.edu. Course numbers, titles, units, meeting times and instructor come from page 1; the lettered prerequisite key from page 2.
+Fall 2026 Course Schedule, version 2, dated 24 July 2026, published at yosan.edu. Course numbers, titles, units, meeting times and instructor come from page 1; the lettered prerequisite key from page 2. The citation travels with the data, in the `source` block of the class file.
 
 The registration form is a separate document and contains no course listings.
 
 ## Known limits
 
-**It's one term's snapshot.** Courses not offered in Fall 2026 have no node, even where they appear in a prerequisite list. CM100 Chinese Medical Terminology is a prerequisite for CM201 and isn't graphed. WM360 Western Pharmacology is an accepted alternative to WM361 for the Graduation Exam and isn't graphed.
+**The curriculum is missing courses that aren't offered.** The data model now supports a course that exists in the programme but doesn't run this term — it appears on the graph with a dashed outline, is marked *not this term* in the course list, and can't be planned. But `curriculum.json` currently contains only the 81 courses on the Fall 2026 schedule. CM100 Chinese Medical Terminology, a prerequisite for CM201, and WM360 Western Pharmacology, an alternative to WM361 for the Graduation Exam, still need adding from the catalog — their units and own prerequisites aren't on the schedule.
 
-**Sections are collapsed.** AC301-1 and AC301-2 are one node. The conflict solver considers both meeting times, but the graph and the ready list show a single AC301.
+**Instructor and delivery mode aren't filled in.** Every section has a place for them and the app displays them, but the values are `null` pending transcription from page 1. `validate.html` reports how many are outstanding.
+
+**A course still can't be planned section by section.** Sections are listed individually in the detail panel with their own times, and the conflict solver considers each. But the ready list and the graph still show one AC301, and adding it to your plan adds the course, not a chosen section.
 
 **EX210 and EX220 are merged** into one node. Same prerequisites, taken the same term, 2 units combined.
 
@@ -136,17 +153,47 @@ The registration form is a separate document and contains no course listings.
 
 ## Maintaining it for a future term
 
-Everything lives in the `<script>` block near the bottom.
+The data is split by how often it changes, and `index.html` holds no course facts of its own.
 
-- `C` — the course table. Each row is `[code, title, units, track, prerequisites, corequisites, anyOfGroups, flags]`. The last two are optional.
-- `MEET` — meeting times as readable strings, e.g. `'Tu 5p-8p'`. Two sections are separated by `|`. Omit a course entirely to treat its time as arranged.
-- `GOALS` — the four goal buttons. Add one by pointing it at any course code; its requirement closure is derived automatically.
-- `TRACKS` — track names and colours.
+**`data/curriculum.json`** — what the programme requires. Changes when the curriculum changes, not every term. One entry per course:
 
-Adding a course means one row in `C` and optionally one line in `MEET`. Everything else — layout, rankings, readiness, conflict detection, progress maths — derives from those.
+```json
+"CM201": { "title": "TCM Diagnosis I", "units": 3, "track": "cm", "pre": ["CM111", "CM112"] }
+```
 
-Bump `SCHEMA` if you change the shape of saved data, so old backups are rejected with a clear message rather than restoring wrong.
+`pre` is hard prerequisites, `co` is corequisites the schedule allows concurrently, `anyOf` is groups where any one member counts (`"anyOf": [["CL310", "CL400"]]`), and `flags` names non-course requirements. Omit any of them when empty. Also holds `tracks` (ids and names — the colours are presentation and live in `index.html`), `goals`, and `requirements`.
+
+**`data/classes-<term>.json`** — the open classes: what actually runs, and when. This is the file you rewrite each term, and it says nothing about prerequisites. One entry per section, because instructor and delivery mode belong to a section rather than a course:
+
+```json
+"AC301": [
+  { "section": "1", "meetings": [{ "day": "M", "start": "9a", "end": "12p" }],
+    "instructor": "…", "mode": "in-person" },
+  { "section": "2", "meetings": [{ "day": "M", "start": "12p", "end": "3p" }],
+    "instructor": "…", "mode": "hybrid" }
+]
+```
+
+`"meetings": []` means an arranged time — the key is required, so you decide rather than forget. A section can list more than one meeting, for a class that runs twice a week. `mode` is `in-person`, `online` or `hybrid`, and is descriptive: scheduling follows whether there are meetings, so an asynchronous class simply has none.
+
+**`data/terms.json`** — points at the current class file. Switching term is this one line, never a code change.
+
+A course in the curriculum with no entry in the class file is understood as not offered this term: it stays on the graph so chains through it stay readable, but it can't be planned and won't appear in the ready list.
+
+Bump `SCHEMA` in `index.html` only if you change the shape of *saved progress*, so old backups are rejected clearly. That's separate from `schemaVersion` in the data files, which guards the data format — bumping one must not invalidate the other.
+
+## Checking the data
+
+Open **`validate.html`** after editing anything in `data/`. It reads the same files the explorer reads and reports what it finds, in plain language.
+
+It checks that every course named in a prerequisite, corequisite, any-of group, goal or qi list actually exists; that there are no prerequisite cycles; that units are positive whole numbers and every track resolves; that every section has a unique id, a readable meeting time that ends after it starts, and a recognised mode; and that every class in the term file exists in the curriculum.
+
+It then checks the drawing against the data: that every course running this term has a node, that every relationship is expressed either as its own arrow or as a path through other courses, and that no arrow exists without a relationship behind it.
+
+Errors mean the data is wrong. Warnings mean it's incomplete but usable — that's how the outstanding instructor and mode fields are reported.
+
+The same checks run in CI on every push that touches `data/`, so bad data can't reach the server unnoticed. Both paths use `data/checks.js`, so they can't drift apart.
 
 ## Built with
 
-[Cytoscape.js](https://js.cytoscape.org/) with the dagre layout extension, loaded from CDN. No build step, no framework, no dependencies to install.
+[Cytoscape.js](https://js.cytoscape.org/) with the dagre layout extension, loaded from CDN. No build step, no framework, no dependencies to install. The data is JSON, fetched at load by a module script — which is why the page has to be served over http rather than opened from disk.

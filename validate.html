@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Course data — check</title>
+<style>
+  :root{ --ink:#16211f; --ink-2:#5c6a68; --ink-3:#8d9997; --bg:#fbfbfa;
+         --panel:#fff; --rule:#e3e5e2; --ok:#0f6e56; --warn:#854f0b; --bad:#a4211f; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;
+    font-size:14px;line-height:1.55;padding:32px 20px 80px}
+  main{max-width:44em;margin:0 auto}
+  h1{font-size:19px;margin:0 0 4px}
+  .sub{color:var(--ink-3);font-size:13px;margin-bottom:22px}
+  .verdict{padding:14px 16px;border-radius:9px;border:1px solid;margin-bottom:24px;font-size:15px}
+  .verdict.pass{background:#e1f5ee;border-color:#9FE1CB;color:#04342C}
+  .verdict.fail{background:#FCEBEB;border-color:#F09595;color:#501313}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);
+     margin:26px 0 8px;font-weight:600}
+  .item{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #f0f1ef;align-items:baseline}
+  .item:last-child{border-bottom:none}
+  .tag{flex:none;font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:999px;
+       text-transform:uppercase;letter-spacing:.04em}
+  .tag.error{background:#FCEBEB;color:var(--bad)}
+  .tag.warn{background:#faeeda;color:var(--warn)}
+  .tag.info{background:#f2f3f1;color:var(--ink-3)}
+  .msg{flex:1}
+  .code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:var(--ink-3);flex:none}
+  .counts{display:flex;gap:18px;font-size:13px;color:var(--ink-2);margin-bottom:8px;flex-wrap:wrap}
+  .counts b{color:var(--ink)}
+  .empty{color:var(--ink-3);font-style:italic}
+  details{margin-top:8px}
+  summary{cursor:pointer;color:var(--ok);font-size:13px}
+  a{color:var(--ok)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Course data — check</h1>
+  <div class="sub">Reads the same files the explorer reads, and reports whether they hold together.
+    Run this after editing anything in <code>data/</code>. <a href="index.html">Back to the explorer</a>.</div>
+  <div id="out">Loading…</div>
+</main>
+
+<script src="data/checks.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
+<script type="module">
+const out = document.getElementById('out');
+const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+async function getJSON(name){
+  const r = await fetch('data/' + name, { cache:'no-cache' });
+  if(!r.ok) throw new Error(`data/${name} — ${r.status} ${r.statusText}`);
+  return r.json();
+}
+
+function list(findings, level){
+  const rows = findings.filter(f => f.level === level);
+  if(!rows.length) return '<div class="empty">None.</div>';
+  return rows.map(f =>
+    `<div class="item"><span class="tag ${level}">${level}</span>
+     <span class="msg">${esc(f.message)}</span>
+     <span class="code">${esc(f.code)}</span></div>`).join('');
+}
+
+try {
+  const terms = await getJSON('terms.json');
+  const [curriculum, classes] = await Promise.all([
+    getJSON('curriculum.json'), getJSON(terms.current)
+  ]);
+
+  const findings = CHECKS.checkData(curriculum, classes);
+
+  // Render checks: build the graph exactly as index.html does, then ask
+  // whether every relation survives as a direct edge or a path.
+  const DB = {};
+  Object.entries(curriculum.courses).forEach(([code, c]) => DB[code] = {
+    id:code, pre:c.pre||[], co:c.co||[], anyOf:c.anyOf||[], flags:c.flags||[]
+  });
+  const HARD = {};
+  const hardAnc = (id, acc) => {
+    if(!acc && HARD[id]) return HARD[id];
+    const top = !acc; acc = acc || new Set();
+    (DB[id] ? DB[id].pre : []).forEach(p => { if(DB[p] && !acc.has(p)){ acc.add(p); hardAnc(p, acc); } });
+    if(top) HARD[id] = acc;
+    return acc;
+  };
+  const directPre = n => n.pre.filter(p => !n.pre.some(q => q !== p && DB[q] && hardAnc(q).has(p)));
+
+  const els = [];
+  Object.values(DB).forEach(n => els.push({ data:{ id:n.id } }));
+  Object.values(DB).forEach(n => {
+    directPre(n).forEach(p => DB[p] && els.push({data:{id:`${p}->${n.id}`, source:p, target:n.id}}));
+    n.co.forEach(p => DB[p] && els.push({data:{id:`${p}~>${n.id}`, source:p, target:n.id}}));
+    n.anyOf.forEach(g => g.forEach(p => DB[p] && els.push({data:{id:`${p}?>${n.id}`, source:p, target:n.id}})));
+  });
+  const cy = cytoscape({ headless:true, elements:els });
+
+  const relations = id => {
+    const n = DB[id];
+    return [...new Set([...n.pre, ...n.co, ...n.anyOf.flat()])].filter(x => DB[x]);
+  };
+  // No readiness pair here: this page has no running app to compare against,
+  // and comparing a function to itself would prove nothing. checkRender skips
+  // that check when the pair is absent.
+  const view = {
+    nodes: cy.nodes().map(n => n.id()),
+    edges: cy.edges().map(e => ({ source:e.source().id(), target:e.target().id() })),
+    reachable: id => cy.$id(id).predecessors('node').map(n => n.id()),
+    relations
+  };
+  findings.push(...CHECKS.checkRender(curriculum, classes, view));
+
+  const errors = findings.filter(f => f.level === 'error').length;
+  const warns  = findings.filter(f => f.level === 'warn').length;
+  const infos  = findings.filter(f => f.level === 'info').length;
+
+  const sectionCount = Object.values(classes.classes)
+    .reduce((a, s) => a + s.length, 0);
+
+  out.innerHTML = `
+    <div class="verdict ${errors ? 'fail' : 'pass'}">
+      ${errors ? `<b>${errors} error${errors===1?'':'s'}.</b> The data is inconsistent — fix these before publishing.`
+               : `<b>All checks passed.</b> The data is internally consistent and the graph expresses every relation.`}
+      ${warns ? ` ${warns} warning${warns===1?'':'s'} below.` : ''}
+    </div>
+    <div class="counts">
+      <span><b>${Object.keys(curriculum.courses).length}</b> courses in the curriculum</span>
+      <span><b>${Object.keys(classes.classes).length}</b> running in ${esc(classes.label)}</span>
+      <span><b>${sectionCount}</b> sections</span>
+      <span><b>${cy.edges().length}</b> edges drawn</span>
+    </div>
+    <div class="counts">
+      <span>Source: ${esc(classes.source.document)}, version ${esc(classes.source.version)}, ${esc(classes.source.dated)}</span>
+    </div>
+    <h2>Errors (${errors})</h2>${list(findings,'error')}
+    <h2>Warnings (${warns})</h2>${list(findings,'warn')}
+    <details><summary>Show ${infos} informational note${infos===1?'':'s'}</summary>${list(findings,'info')}</details>
+  `;
+} catch(e){
+  out.innerHTML = `<div class="verdict fail"><b>Could not run the checks.</b> ${esc(e.message)}</div>
+    <p class="sub">This page must be served over http, not opened from a file.</p>`;
+}
+</script>
+</body>
+</html>
