@@ -830,10 +830,9 @@ function renderDetail(){
     <div class="dsub">${n.units} unit${n.units>1?'s':''} · ${meetLabel(n.id)}</div>
     <span class="pill" style="background:${t.bg};border-color:${t.line};color:${t.ink}">${t.name}</span>
     ${done.has(n.id) ? '<span class="pill" style="background:#e1f5ee;border-color:#0f6e56;color:#04342C">completed</span>'
+      : !isOffered(n.id) ? `<span class="pill" style="background:#f2f3f1;border-color:#cdd1cd;color:#5c6a68">not offered ${TERM.label}</span>`
       : ready(n.id) ? '<span class="pill" style="background:#e1f5ee;border-color:#0f6e56;color:#04342C">ready to take</span>'
       : '<span class="pill" style="background:#faeeda;border-color:#BA7517;color:#412402">blocked</span>'}
-    ${isOffered(n.id) ? ''
-      : `<span class="pill" style="background:#f2f3f1;border-color:#cdd1cd;color:#5c6a68">not offered ${TERM.label}</span>`}
     <div style="margin:12px 0;display:flex;gap:7px">
       <button class="btn ${done.has(n.id)?'off':''}" id="toggle">
         ${done.has(n.id) ? 'Mark not completed' : 'Mark completed'}

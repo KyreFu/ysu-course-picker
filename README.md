@@ -137,9 +137,9 @@ The registration form is a separate document and contains no course listings.
 
 ## Known limits
 
-**The curriculum is missing courses that aren't offered.** The data model now supports a course that exists in the programme but doesn't run this term — it appears on the graph with a dashed outline, is marked *not this term* in the course list, and can't be planned. But `curriculum.json` currently contains only the 81 courses on the Fall 2026 schedule. CM100 Chinese Medical Terminology, a prerequisite for CM201, and WM360 Western Pharmacology, an alternative to WM361 for the Graduation Exam, still need adding from the catalog — their units and own prerequisites aren't on the schedule.
+**WM360 Western Pharmacology isn't modelled.** The schedule's key for the Graduation Exam reads "WM360 Western or WM361 Integrative Pharmacology", but WM360 appears nowhere in the university's own curriculum listing, so only WM361 is graphed. A student who took WM360 will be told they're blocked. Worth settling against the catalog.
 
-**Instructor and delivery mode aren't filled in.** Every section has a place for them and the app displays them, but the values are `null` pending transcription from page 1. `validate.html` reports how many are outstanding.
+**Five sections have no instructor.** The two herb labs, which say only "reserve times after registration", and the three benchmark exams. The schedule lists none for them; every other section has one.
 
 **A course still can't be planned section by section.** Sections are listed individually in the detail panel with their own times, and the conflict solver considers each. But the ready list and the graph still show one AC301, and adding it to your plan adds the course, not a chosen section.
 

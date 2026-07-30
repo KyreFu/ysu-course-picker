@@ -27,10 +27,11 @@
   ],
 
   "courses": {
+    "CM100": { "title": "Chinese Medical Terminology", "units": 2, "track": "cm" },
     "CM111": { "title": "Principles & Theories I", "units": 3, "track": "cm" },
     "CM112": { "title": "Principles & Theories 2", "units": 3, "track": "cm", "pre": ["CM111"] },
     "CM113": { "title": "Principles & Theories 3", "units": 2, "track": "cm", "pre": ["CM111", "CM112"] },
-    "CM201": { "title": "TCM Diagnosis I", "units": 3, "track": "cm", "pre": ["CM111", "CM112"] },
+    "CM201": { "title": "TCM Diagnosis I", "units": 3, "track": "cm", "pre": ["CM111", "CM112", "CM100"] },
     "CM202": { "title": "Adv TCM Syndrome Diagnosis", "units": 3, "track": "cm", "pre": ["CM201"] },
     "CM301": { "title": "TCM Internal Medicine I", "units": 3, "track": "cm", "pre": ["CM201", "CM202", "HM210", "HM220", "HM230"], "co": ["AC320"] },
     "CM302": { "title": "TCM Internal Medicine II", "units": 3, "track": "cm", "pre": ["CM201", "CM202", "HM210", "HM220", "HM230"], "co": ["AC320"] },
