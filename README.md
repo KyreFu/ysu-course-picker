@@ -106,6 +106,14 @@ Alt-click any node — Option on a Mac — to mark it complete or put it back wi
 
 Colours are tracks: TCM theory, herbal medicine, acupuncture, biomedicine, clinical, Taoist studies and qi cultivation, benchmark exams, doctoral.
 
+### Direct and transitive requirements
+
+Every requirement a course has is on the graph, but not every one gets its own arrow. A requirement is **direct** when nothing else that course needs already needs it, and it's drawn. Otherwise it's **transitive** — you reach it by following the arrows through the courses in between — and drawing it again would only repeat what the path already says.
+
+CL600 requires twelve things. Eight of them are already required by the Pre-Clinical Exam, which CL600 also requires, so they arrive through it and only four arrows are drawn. Across the whole graph this removes 38 of 170 prerequisite arrows without losing a single relationship.
+
+Nothing is hidden by this. **Needs** in the detail panel lists every requirement, direct or not, and readiness is computed from the full list — so a course never becomes takeable because an arrow wasn't drawn. Corequisites and "one of" groups are never reduced: neither guarantees a specific course was completed, so neither can stand in for one.
+
 ## Where the data comes from
 
 Fall 2026 Course Schedule, version 2, dated 24 July 2026, published at yosan.edu. Course numbers, titles, units, meeting times and instructor come from page 1; the lettered prerequisite key from page 2.
@@ -122,7 +130,7 @@ The registration form is a separate document and contains no course listings.
 
 **"At least one CL310 or CL400"** is modelled properly — WM340 and WM420 unlock with either. Same for WM431, which accepts internship Level 2 or Level 3.
 
-**CL600 draws a simplified edge set.** The schedule names eleven courses individually; most are already implied through the Pre-Clinical Exam requirement, so only the additional ones are drawn. The readiness check still tests all of them.
+**Only direct requirements are drawn.** See [Direct and transitive requirements](#direct-and-transitive-requirements) below. CL600 is the clearest case: the schedule names eleven courses plus the Pre-Clinical Exam, but eight of those eleven are already required by the exam itself, so CL600 shows four arrows instead of twelve. The readiness check still tests all of them.
 
 **Prerequisites can only be waived by approved Override Petition.** This tool is a planning aid. Before you register, check the catalog and talk to an academic counselor.
 
