@@ -592,6 +592,33 @@ function scope(){
   const s = ancestors(goal); s.add(goal); return s;
 }
 
+// Transitive closure over hard prerequisites only. Corequisites and any-of
+// groups are excluded deliberately: neither guarantees a specific course has
+// been completed, so neither can imply one.
+const HARD_ANC = {};
+function hardAncestors(id, acc){
+  if(!acc && HARD_ANC[id]) return HARD_ANC[id];
+  const top = !acc;
+  acc = acc || new Set();
+  const n = DB[id];
+  if(n) n.pre.forEach(p => {
+    if(DB[p] && !acc.has(p)){ acc.add(p); hardAncestors(p, acc); }
+  });
+  if(top) HARD_ANC[id] = acc;
+  return acc;
+}
+
+// A prerequisite is *direct* when nothing else the course requires already
+// requires it. Anything else is reached transitively, through nodes and edges
+// the graph already draws, so giving it its own edge just repeats the same
+// fact — CL600 alone sheds eight arrows. Readiness is untouched: ready() tests
+// every entry in n.pre regardless of what gets drawn, and the detail panel
+// still lists them all under Needs.
+function directPre(n){
+  return n.pre.filter(p =>
+    !n.pre.some(q => q !== p && DB[q] && hardAncestors(q).has(p)));
+}
+
 const DESC = {};
 function descendants(id){
   if(DESC[id]) return DESC[id];
@@ -615,7 +642,7 @@ function impact(id, s){
 const els = [];
 Object.values(DB).forEach(n => els.push({data:{id:n.id, label:`${n.id}\n${n.title}\n${n.units} unit${n.units>1?'s':''}`, track:n.track}}));
 Object.values(DB).forEach(n => {
-  n.pre.forEach(p => DB[p] && els.push({data:{id:`${p}->${n.id}`, source:p, target:n.id, kind:'hard'}}));
+  directPre(n).forEach(p => DB[p] && els.push({data:{id:`${p}->${n.id}`, source:p, target:n.id, kind:'hard'}}));
   n.co.forEach(p => DB[p] && els.push({data:{id:`${p}~>${n.id}`, source:p, target:n.id, kind:'co'}}));
   n.anyOf.forEach(g => g.forEach(p => DB[p] && els.push({data:{id:`${p}?>${n.id}`, source:p, target:n.id, kind:'co'}})));
 });
