@@ -10,7 +10,7 @@ Single HTML file, no install, no account. Open it in a browser.
 
 ## Getting started
 
-Download `ysu-fall-2026-prereq-explorer.html` and double-click it. It opens in your default browser.
+Download `index.html` and double-click it. It opens in your default browser.
 
 **Keep it in one place.** Progress is saved per file location, so moving the file after you've entered data makes it look like the data vanished. Pick a folder — Documents, not Downloads — and leave it there. See [Saving your progress](#saving-your-progress).
 
