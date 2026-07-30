@@ -20,7 +20,13 @@ Download `ysu-fall-2026-prereq-explorer.html` and double-click it. It opens in y
 
 ### Mark what you've finished
 
-Click a course, then **Mark completed** in the right panel. Everything else recalculates from there.
+Three equivalent ways:
+
+- **✓** on any row in **Ready to take now**.
+- **Alt-click** a node in the graph — Option on a Mac.
+- Click a course, then **Mark completed** in the right panel.
+
+Everything else recalculates from there. Completed courses collect in **Already done**, the first list in the left panel, with a running count and total units. **↺** on any row puts one back — which is also how you un-mark something you finished long ago, without hunting for its node in the graph.
 
 Two things aren't courses and get their own checkboxes on the left: the 150 hours of clinical theater and observation, and CPR / first aid / CNT certification. Both are required for CL600. The 4 units of qi cultivation compute themselves from whichever QC and tai chi courses you've marked off.
 
@@ -42,6 +48,8 @@ The goal changes the advice, not just the view. From a standing start, WM151 out
 **Ready to take now** shows every course whose prerequisites you've satisfied, ranked by leverage. The number on each row is how many *remaining* courses toward your selected goal depend on it, counted transitively. Colour intensity tracks that number, scaled against the highest value currently showing.
 
 A `0` means nothing else is waiting on it — take it whenever it fits. A high number means it's holding up a lot.
+
+Each row carries two buttons: **✓** marks the course done, **+** adds it to your plan and becomes **−** to take it back out. Marking a course done drops it off this list and usually pushes new rows on, since finishing something is what unlocks the next thing.
 
 ### Build a plan
 
@@ -79,6 +87,8 @@ Restore validates what it reads. Files from another tool or a newer version are 
 **Dashed arrow** — corequisite, which the schedule allows concurrently. Doesn't block readiness.
 **Filled node** — marked complete.
 **Ringed node** — every prerequisite satisfied; ready to take.
+
+Alt-click any node — Option on a Mac — to mark it complete or put it back without leaving the graph. A plain click still selects it and traces its chain.
 
 Colours are tracks: TCM theory, herbal medicine, acupuncture, biomedicine, clinical, Taoist studies and qi cultivation, benchmark exams, doctoral.
 

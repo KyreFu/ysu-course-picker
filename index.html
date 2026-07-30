@@ -38,7 +38,7 @@
     width:330px;flex:none;border-left:1px solid var(--rule);background:var(--panel);
     overflow-y:auto;padding:16px 18px 40px;
   }
-  aside.left{border-left:none;border-right:1px solid var(--rule);width:270px}
+  aside.left{border-left:none;border-right:1px solid var(--rule);width:310px}
   .sec{margin-bottom:22px}
   .sec h2{
     font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;
@@ -167,16 +167,21 @@
       <div id="goals"></div>
     </div>
     <div class="sec">
-      <h2>My plan <span id="plan-count" class="tally"></span></h2>
-      <div class="list" id="plan"></div>
-      <div id="plan-status"></div>
-      <div class="wk" id="week"></div>
-      <p class="note" style="margin:8px 0 0">Add courses with <b>+</b> from the list below or from any course's detail panel. Times come from the Fall 2026 schedule; where a course has two sections, the grid shows a combination that works.</p>
+      <h2>Already done <span id="done-count" class="tally"></span></h2>
+      <div class="list" id="donelist"></div>
+      <p class="note" style="margin:7px 0 0">Everything you've marked complete. <b>&#8634;</b> puts one back.</p>
     </div>
     <div class="sec">
       <h2>Ready to take now</h2>
       <div class="list" id="ready"></div>
-      <p class="note" style="margin:7px 0 0">Ranked by how much each course unblocks. The number is how many remaining courses toward the selected goal depend on it.</p>
+      <p class="note" style="margin:7px 0 0">Ranked by how much each course unblocks. The number is how many remaining courses toward the selected goal depend on it. <b>&#10003;</b> marks one done, <b>+</b> adds it to your plan.</p>
+    </div>
+    <div class="sec">
+      <h2>My plan <span id="plan-count" class="tally"></span></h2>
+      <div class="list" id="plan"></div>
+      <div id="plan-status"></div>
+      <div class="wk" id="week"></div>
+      <p class="note" style="margin:8px 0 0">Add courses with <b>+</b> from the list above or from any course's detail panel. Times come from the Fall 2026 schedule; where a course has two sections, the grid shows a combination that works.</p>
     </div>
     <div class="sec">
       <h2>Non-course requirements</h2>
@@ -214,6 +219,7 @@
       <p class="note">
         Solid arrows are hard prerequisites. Dashed arrows are corequisites — the schedule allows them concurrently.
         A filled node is one you've marked complete; a ringed node is one every prerequisite for which is satisfied.
+        Alt-click a node — Option on a Mac — to mark it complete or put it back without leaving the graph.
         Selecting a course dims everything except its own chain: what it needs behind it, what it unlocks ahead.
         The view zooms in far enough to stay readable, so long chains will run off-screen — drag to follow them,
         or click empty space to zoom back out to the whole graph.
@@ -764,11 +770,7 @@ function renderDetail(){
         <span class="nm">${m.title}</span></div>`).join('')
     }</div>`;
   const btn = document.getElementById('toggle');
-  if(btn) btn.onclick = () => {
-    done.has(n.id) ? done.delete(n.id) : done.add(n.id);
-    if(done.has(n.id)) plan.delete(n.id);
-    save(); paint(); renderAll();
-  };
+  if(btn) btn.onclick = () => toggleDone(n.id);
   const pb = document.getElementById('plan-btn');
   if(pb) pb.onclick = () => togglePlan(n.id);
   box.querySelectorAll('[data-go]').forEach(el => {
@@ -840,6 +842,12 @@ function clashPairs(ids){
     for(let j = i+1; j < ids.length; j++)
       if(conflicts(ids[i], ids[j])) out.push([ids[i], ids[j]]);
   return out;
+}
+
+function toggleDone(id){
+  done.has(id) ? done.delete(id) : done.add(id);
+  if(done.has(id)) plan.delete(id);
+  save(); paint(); renderAll();
 }
 
 function togglePlan(id){
@@ -926,6 +934,25 @@ function renderPlan(){
     el.onclick = () => focus(el.getAttribute('data-go')));
 }
 
+function renderCompleted(){
+  const ids = [...done].filter(id => DB[id]).sort((a,b) => a.localeCompare(b));
+  const units = ids.reduce((a,id) => a + DB[id].units, 0);
+  const box = document.getElementById('donelist');
+  document.getElementById('done-count').textContent =
+    ids.length ? `${ids.length} course${ids.length===1?'':'s'} · ${units}u` : '';
+  box.innerHTML = ids.length
+    ? ids.map(id => `<div class="row">
+        <span class="code" data-go="${id}">${id}</span>
+        <span class="nm" data-go="${id}">${DB[id].title}</span>
+        <button class="add in" data-undo="${id}" title="Mark not completed">&#8634;</button>
+      </div>`).join('')
+    : '<div class="empty">Nothing marked complete yet.</div>';
+  box.querySelectorAll('[data-go]').forEach(el =>
+    el.onclick = () => focus(el.getAttribute('data-go')));
+  box.querySelectorAll('[data-undo]').forEach(b =>
+    b.onclick = e => { e.stopPropagation(); toggleDone(b.getAttribute('data-undo')); });
+}
+
 function renderReady(){
   const list = rankedReady();
   const max = list.length ? list[0].i.count : 0;
@@ -934,11 +961,14 @@ function renderReady(){
         <span class="code" data-go="${n.id}">${n.id}</span>
         <span class="nm" data-go="${n.id}">${n.title}</span>
         <span class="imp" style="${impStyle(i.count, max)}" title="Unlocks ${i.count} further course${i.count===1?'':'s'} toward this goal">${i.count}</span>
-        <button class="add ${plan.has(n.id)?'in':''}" data-add="${n.id}" title="${plan.has(n.id)?'Remove from plan':'Add to plan'}">${plan.has(n.id)?'&#10003;':'+'}</button>
+        <button class="add" data-done="${n.id}" title="Mark completed">&#10003;</button>
+        <button class="add ${plan.has(n.id)?'in':''}" data-add="${n.id}" title="${plan.has(n.id)?'Remove from plan':'Add to plan'}">${plan.has(n.id)?'&minus;':'+'}</button>
       </div>`).join('')
     : '<div class="empty">Nothing unlocked yet — start marking off what you\'ve finished.</div>';
   document.querySelectorAll('#ready [data-go]').forEach(el =>
     el.onclick = () => focus(el.getAttribute('data-go')));
+  document.querySelectorAll('#ready [data-done]').forEach(b =>
+    b.onclick = e => { e.stopPropagation(); toggleDone(b.getAttribute('data-done')); });
   document.querySelectorAll('#ready [data-add]').forEach(b =>
     b.onclick = e => { e.stopPropagation(); togglePlan(b.getAttribute('data-add')); });
   document.getElementById('qi-note').textContent =
@@ -950,9 +980,12 @@ function renderLegend(){
     `<span class="lg" style="background:${t.bg};border-color:${t.line};color:${t.ink}">${t.name}</span>`).join('');
 }
 
-function renderAll(){ renderGoals(); renderPlan(); renderReady(); renderDetail(); }
+function renderAll(){ renderGoals(); renderCompleted(); renderReady(); renderPlan(); renderDetail(); }
 
-cy.on('tap','node', e => focus(e.target.id()));
+cy.on('tap','node', e => {
+  if(e.originalEvent && e.originalEvent.altKey){ toggleDone(e.target.id()); return; }
+  focus(e.target.id());
+});
 cy.on('tap', e => { if(e.target === cy) focus(null); });
 
 document.getElementById('search').addEventListener('input', e => {
