@@ -49,14 +49,18 @@ Two things aren't courses and get their own checkboxes on the left: the 150 hour
 
 Four options in the top left. Each filters the graph down to just what that goal requires, lists those courses in the right panel, and shows a progress bar.
 
-| Goal | Prerequisite courses |
-|---|---|
-| Whole program | everything on the Fall 2026 schedule |
-| First Comprehensive (EX100) | 14 |
-| Pre-clinical exams (EX210 / EX220) | 22 |
-| Graduation Exam (EX300) | 37 |
+| Goal | Requires | Units |
+|---|---|---|
+| Whole program | 84 entries — 77 courses and 7 series | 197 |
+| First Comprehensive (EX100) | 14 | 38 |
+| Pre-clinical exams (EX210 / EX220) | 23 | 62 |
+| Graduation Exam (EX300) | 38 | 116 |
+
+A series counts as one entry carrying all its units, so CL600 is one line worth 10 rather than five lines worth 2. That is where the Graduation Exam's figure comes from: the three internship levels alone are 26 of its 116 units.
 
 The goal changes the advice, not just the view. From a standing start, WM151 outranks CM111 for the First Comprehensive but ties with it for the Graduation Exam — different exams weight the tracks differently.
+
+**One caveat on the Graduation Exam figure.** WM431 accepts *either* internship Level 2 or Level 3, but the count includes both, so 8 of those 116 units are for a course you won't necessarily take. The tool has always counted "one of" options this way; the series work just made the overcount bigger and more visible.
 
 ### Read the ready list
 

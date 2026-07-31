@@ -20,7 +20,7 @@
   },
 
   "goals": [
-    { "id": "ALL", "name": "Whole program", "sub": "Everything on the Fall 2026 schedule" },
+    { "id": "ALL", "name": "Whole program", "sub": "Everything in the curriculum, offered this term or not" },
     { "id": "EX100", "name": "First Comprehensive", "sub": "End of the foundational sequence" },
     { "id": "EX210", "name": "Pre-clinical exams", "sub": "The gate into practice internship" },
     { "id": "EX300", "name": "Graduation Exam", "sub": "Full path to the degree" }
