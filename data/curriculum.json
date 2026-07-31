@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "_comment": "Curriculum: what the programme requires. Changes when the curriculum changes, not every term. The classes that actually run in a given term live in classes-<term>.json.",
+
+  "tracks": {
+    "cm": { "name": "TCM theory & diagnosis" },
+    "hm": { "name": "Herbal medicine" },
+    "ac": { "name": "Acupuncture" },
+    "wm": { "name": "Biomedicine" },
+    "cl": { "name": "Clinical" },
+    "tq": { "name": "Taoist studies & qi" },
+    "ex": { "name": "Benchmark exams" },
+    "pd": { "name": "Doctoral (PD)" }
+  },
+
+  "requirements": {
+    "hours": { "label": "150 hours clinical theater & observation", "kind": "manual" },
+    "certs": { "label": "CPR, first aid and CNT certification", "kind": "manual" },
+    "qi": { "label": "4 units of qi cultivation", "kind": "units", "units": 4, "countsToward": ["QC110", "QC120", "QC140", "QC252", "EL346", "EL357"] }
+  },
+
+  "_notesNote": "Shown to students in the 'About this data' panel. Say what the model does and where the sources disagree, so nobody has to guess whether something is a bug.",
+
+  "notes": [
+    "EX210 and EX220 appear as one entry: same prerequisites, taken the same term, units combined.",
+    "The Graduation Exam accepts WM360 or WM361. WM360 is named in the schedule's prerequisite key but appears nowhere in the university's curriculum listing, so only WM361 is modelled. If you took WM360, mark WM361 complete.",
+    "Where a requirement offers a choice — 'one of CL310 or CL400' — the goal totals count every option, so units and course counts read a little high.",
+    "QC130 and QC150 are in the curriculum but are not counted toward the 4-unit qi cultivation requirement. The schedule's foundation list names six other courses, and it is not settled whether these count as well.",
+    "The university's advising tool lists more courses for the Comprehensive and Pre-clinical exams than the schedule's prerequisite key does. These figures follow the key, which is the source cited below."
+  ],
+
+  "goals": [
+    { "id": "ALL", "name": "Whole program", "sub": "Everything in the curriculum, offered this term or not" },
+    { "id": "EX100", "name": "First Comprehensive", "sub": "End of the foundational sequence" },
+    { "id": "EX210", "name": "Pre-clinical exams", "sub": "The gate into practice internship" },
+    { "id": "EX300", "name": "Graduation Exam", "sub": "Full path to the degree" }
+  ],
+
+  "_seriesNote": "A series is a course taken more than once, each enrolment a separate course carrying its own units. Membership is declared here, never inferred from the shape of a course code: CL600A-E are marked by a trailing letter, but QC130/QC131 and QC150/QC151/QC152 are not, and a -1/-2 suffix in a term schedule means another opening of one course, not a series. Other courses reference the series id, never a member. Prerequisites live on the series and are inherited by every member.",
+
+  "series": {
+    "CL310": {
+      "title": "Clinical Theater", "track": "cl", "required": 2,
+      "members": ["CL310A", "CL310B"],
+      "pre": ["CL100"]
+    },
+    "CL400": {
+      "title": "Clinical Observation", "track": "cl", "required": 3,
+      "members": ["CL400A", "CL400B", "CL400C"],
+      "pre": ["CL100"]
+    },
+    "CL600": {
+      "title": "Practice Internship Lv 1", "track": "cl", "required": 5,
+      "members": ["CL600A", "CL600B", "CL600C", "CL600D", "CL600E"],
+      "pre": ["EX210", "CL100", "CM201", "CM202", "HM210", "HM220", "HM230", "AC301", "AC302", "WM211", "WM212", "WM310"],
+      "flags": ["hours", "certs", "qi"]
+    },
+    "CL700": {
+      "title": "Practice Internship Lv 2", "track": "cl", "required": 4,
+      "members": ["CL700A", "CL700B", "CL700C", "CL700D"],
+      "pre": ["CL600"]
+    },
+    "CL800": {
+      "title": "Practice Internship Lv 3", "track": "cl", "required": 4,
+      "members": ["CL800A", "CL800B", "CL800C", "CL800D"],
+      "pre": ["CL700"]
+    },
+    "QC130x2": {
+      "title": "Harmony Taijiquan", "track": "tq", "required": 2,
+      "members": ["QC130", "QC131"]
+    },
+    "QC150x3": {
+      "title": "Dao-In Qigong", "track": "tq", "required": 3,
+      "members": ["QC150", "QC151", "QC152"]
+    }
+  },
+
+  "courses": {
+    "CM100": { "title": "Chinese Medical Terminology", "units": 2, "track": "cm" },
+    "CM111": { "title": "Principles & Theories I", "units": 3, "track": "cm" },
+    "CM112": { "title": "Principles & Theories 2", "units": 3, "track": "cm", "pre": ["CM111"] },
+    "CM113": { "title": "Principles & Theories 3", "units": 2, "track": "cm", "pre": ["CM111", "CM112"] },
+    "CM201": { "title": "TCM Diagnosis I", "units": 3, "track": "cm", "pre": ["CM111", "CM112", "CM100"] },
+    "CM202": { "title": "Adv TCM Syndrome Diagnosis", "units": 3, "track": "cm", "pre": ["CM201"] },
+    "CM301": { "title": "TCM Internal Medicine I", "units": 3, "track": "cm", "pre": ["CM201", "CM202", "HM210", "HM220", "HM230"], "co": ["AC320"] },
+    "CM302": { "title": "TCM Internal Medicine II", "units": 3, "track": "cm", "pre": ["CM201", "CM202", "HM210", "HM220", "HM230"], "co": ["AC320"] },
+    "CM400": { "title": "Survey of TCM Specialties 1", "units": 3, "track": "cm", "pre": ["CM201", "CM202", "HM210", "HM220", "HM230"], "co": ["AC320"] },
+    "CM411": { "title": "Survey of TCM Specialties 2", "units": 3, "track": "cm", "pre": ["CM201", "CM202", "HM210", "HM220", "HM230"], "co": ["AC320"] },
+    "CM420": { "title": "Survey of TCM Classics 1", "units": 2, "track": "cm", "pre": ["CM201", "CM202", "HM210", "HM220", "HM230"], "co": ["AC320"] },
+    "CM421": { "title": "Survey of TCM Classics 2 (SHL)", "units": 3, "track": "cm", "pre": ["CM201", "CM202", "HM210", "HM220", "HM230"], "co": ["AC320"] },
+    "HM100": { "title": "Fund. of Chinese Herbology", "units": 1, "track": "hm" },
+    "HM101": { "title": "Essential Single Herbs", "units": 1, "track": "hm", "co": ["HM100", "CM111"] },
+    "HM110": { "title": "Herbal Materia Medica 1", "units": 3, "track": "hm", "pre": ["HM100", "CM111"] },
+    "HM120": { "title": "Herbal Materia Medica 2", "units": 3, "track": "hm", "pre": ["HM100", "CM111"] },
+    "HM130": { "title": "Herbal Materia Medica 3", "units": 3, "track": "hm", "pre": ["HM100", "CM111"] },
+    "HM111": { "title": "Herb Lab Lv 1", "units": 1, "track": "hm", "co": ["HM110"] },
+    "HM121": { "title": "Herb Lab Lv 2", "units": 1, "track": "hm", "co": ["HM120"] },
+    "HM210": { "title": "Herbal Formulas 1", "units": 3, "track": "hm", "pre": ["HM101", "HM110", "HM120", "HM130", "CM201"] },
+    "HM220": { "title": "Herbal Formulas 2", "units": 3, "track": "hm", "pre": ["HM101", "HM110", "HM120", "HM130", "CM201"] },
+    "HM230": { "title": "Herbal Formulas 3", "units": 3, "track": "hm", "pre": ["HM101", "HM110", "HM120", "HM130", "CM201"] },
+    "HM240": { "title": "TCM Nutrition", "units": 2, "track": "hm", "pre": ["HM110", "HM120", "HM130", "CM112"] },
+    "HM310": { "title": "Herbal Formula Construction", "units": 2, "track": "hm", "pre": ["CM201", "CM202", "HM210", "HM220", "HM230"] },
+    "HM320": { "title": "Herbal Patents & Ext. Medicines", "units": 2, "track": "hm", "pre": ["CM201", "CM202", "HM210", "HM220", "HM230"] },
+    "AC100": { "title": "Intro to Meridian Theory", "units": 2, "track": "ac" },
+    "AC201": { "title": "Acupuncture 1", "units": 3, "track": "ac", "pre": ["AC100"], "co": ["WM151"] },
+    "AC202": { "title": "Acupuncture 2", "units": 3, "track": "ac", "pre": ["AC100"], "co": ["WM151"] },
+    "AC203": { "title": "Acupuncture 3", "units": 3, "track": "ac", "pre": ["AC100"], "co": ["WM151"] },
+    "AC220": { "title": "Tuina & Acupressure", "units": 3, "track": "ac", "pre": ["AC100"] },
+    "AC301": { "title": "Acupuncture Techniques I", "units": 3, "track": "ac", "pre": ["AC201", "AC202", "AC203", "CM111", "CM112"] },
+    "AC302": { "title": "Acupuncture Techniques II", "units": 3, "track": "ac", "pre": ["AC301"] },
+    "AC310": { "title": "Auricular & Scalp Acupuncture", "units": 2, "track": "ac", "pre": ["AC301"] },
+    "AC320": { "title": "Acupuncture Point Therapeutics", "units": 3, "track": "ac", "pre": ["AC201", "AC202", "AC203", "CM111", "CM112"] },
+    "WM110": { "title": "Biology", "units": 2, "track": "wm" },
+    "WM120": { "title": "Chemistry", "units": 2, "track": "wm" },
+    "WM130": { "title": "Biochemistry", "units": 2, "track": "wm", "pre": ["WM110", "WM120"] },
+    "WM140": { "title": "Physics", "units": 2, "track": "wm" },
+    "WM151": { "title": "Anatomy & Physiology 1", "units": 3, "track": "wm" },
+    "WM152": { "title": "Anatomy & Physiology 2", "units": 3, "track": "wm", "pre": ["WM151"], "co": ["WM110"] },
+    "WM153": { "title": "Anatomy & Physiology 3", "units": 3, "track": "wm", "pre": ["WM151"], "co": ["WM110"] },
+    "WM160": { "title": "General Psychology", "units": 2, "track": "wm" },
+    "WM211": { "title": "Pathophysiology I", "units": 3, "track": "wm", "pre": ["WM151", "WM152", "WM153", "WM130"] },
+    "WM212": { "title": "Pathophysiology II", "units": 3, "track": "wm", "pre": ["WM211"] },
+    "WM220": { "title": "Western Clinical Nutrition", "units": 3, "track": "wm", "pre": ["WM151", "WM152", "WM153", "WM130"] },
+    "WM230": { "title": "History of Medicine", "units": 2, "track": "wm" },
+    "WM310": { "title": "Western Physical Assessment", "units": 3, "track": "wm", "pre": ["WM211"], "co": ["WM212"] },
+    "WM321": { "title": "Western Clinical Medicine 1", "units": 3, "track": "wm", "pre": ["WM211", "WM212", "WM310"] },
+    "WM322": { "title": "Western Clinical Medicine 2", "units": 3, "track": "wm", "pre": ["WM211", "WM212", "WM310"] },
+    "WM330": { "title": "Medical Imaging & Lab Diagnosis", "units": 2, "track": "wm", "pre": ["WM211", "WM212"] },
+    "WM340": { "title": "Mental Wellness & Patient Care Psych.", "units": 2, "track": "wm", "pre": ["WM160"], "anyOf": [["CL310", "CL400"]] },
+    "WM361": { "title": "Integrative Pharmacology", "units": 3, "track": "wm", "pre": ["WM130", "WM211", "WM212"] },
+    "WM370": { "title": "Biomedical Acupuncture", "units": 1, "track": "wm" },
+    "WM420": { "title": "Principles of Public Health", "units": 2, "track": "wm", "pre": ["WM211", "WM212"], "anyOf": [["CL310", "CL400"]] },
+    "WM431": { "title": "Healthcare Law & Ethics", "units": 1, "track": "wm", "anyOf": [["CL700", "CL800"]] },
+    "WM432": { "title": "Healthcare Business Management", "units": 2, "track": "wm", "co": ["CL600"] },
+    "CL100": { "title": "Intro to Patient Care", "units": 2, "track": "cl", "co": ["CM201"] },
+
+    "CL310A": { "title": "Clinical Theater I", "units": 1, "track": "cl", "series": "CL310" },
+    "CL310B": { "title": "Clinical Theater II", "units": 1, "track": "cl", "series": "CL310" },
+
+    "CL400A": { "title": "Clinical Observation I", "units": 1, "track": "cl", "series": "CL400" },
+    "CL400B": { "title": "Clinical Observation II", "units": 1, "track": "cl", "series": "CL400" },
+    "CL400C": { "title": "Clinical Observation III", "units": 1, "track": "cl", "series": "CL400" },
+
+    "CL600A": { "title": "Clinic Internship Lv 1 (1 of 5)", "units": 2, "track": "cl", "series": "CL600" },
+    "CL600B": { "title": "Clinic Internship Lv 1 (2 of 5)", "units": 2, "track": "cl", "series": "CL600" },
+    "CL600C": { "title": "Clinic Internship Lv 1 (3 of 5)", "units": 2, "track": "cl", "series": "CL600" },
+    "CL600D": { "title": "Clinic Internship Lv 1 (4 of 5)", "units": 2, "track": "cl", "series": "CL600" },
+    "CL600E": { "title": "Clinic Internship Lv 1 (5 of 5)", "units": 2, "track": "cl", "series": "CL600" },
+
+    "CL700A": { "title": "Clinical Internship Lv 2 (1 of 4)", "units": 2, "track": "cl", "series": "CL700" },
+    "CL700B": { "title": "Clinical Internship Lv 2 (2 of 4)", "units": 2, "track": "cl", "series": "CL700" },
+    "CL700C": { "title": "Clinical Internship Lv 2 (3 of 4)", "units": 2, "track": "cl", "series": "CL700" },
+    "CL700D": { "title": "Clinical Internship Lv 2 (4 of 4)", "units": 2, "track": "cl", "series": "CL700" },
+
+    "CL800A": { "title": "Clinical Internship Lv 3 (1 of 4)", "units": 2, "track": "cl", "series": "CL800" },
+    "CL800B": { "title": "Clinical Internship Lv 3 (2 of 4)", "units": 2, "track": "cl", "series": "CL800" },
+    "CL800C": { "title": "Clinical Internship Lv 3 (3 of 4)", "units": 2, "track": "cl", "series": "CL800" },
+    "CL800D": { "title": "Clinical Internship Lv 3 (4 of 4)", "units": 2, "track": "cl", "series": "CL800" },
+
+    "CL880": { "title": "Externship", "units": 1, "track": "cl", "pre": ["CL600"] },
+    "CL611": { "title": "Integrative Case Studies", "units": 1, "track": "cl", "co": ["CL600"] },
+    "CL711": { "title": "Integrative Case Studies", "units": 1, "track": "cl", "co": ["CL700"] },
+    "CL811": { "title": "Integrative Case Studies", "units": 1, "track": "cl", "co": ["CL800"] },
+    "TO100": { "title": "Taoism I", "units": 1, "track": "tq" },
+    "TO200": { "title": "Taoism II: Natural Healing", "units": 1, "track": "tq", "pre": ["TO100"] },
+    "TO300": { "title": "Taoism III: Healthcare Practitioner", "units": 1, "track": "tq", "pre": ["TO100", "TO200"] },
+    "QC110": { "title": "Self-Healing Qi Gong", "units": 1, "track": "tq" },
+    "QC120": { "title": "Eight Treasures Qi Gong", "units": 1, "track": "tq" },
+    "QC140": { "title": "Infinichi Qi Gong", "units": 1, "track": "tq" },
+    "QC252": { "title": "Dao-In Qi Gong Level 3", "units": 1, "track": "tq" },
+    "QC130": { "title": "Harmony Taijiquan (1 of 2)", "units": 1, "track": "tq", "series": "QC130x2" },
+    "QC131": { "title": "Harmony Taijiquan (2 of 2)", "units": 1, "track": "tq", "series": "QC130x2" },
+    "QC150": { "title": "Dao-In Qigong (1 of 3)", "units": 1, "track": "tq", "series": "QC150x3" },
+    "QC151": { "title": "Dao-In Qigong (2 of 3)", "units": 1, "track": "tq", "series": "QC150x3" },
+    "QC152": { "title": "Dao-In Qigong (3 of 3)", "units": 1, "track": "tq", "series": "QC150x3" },
+    "EL346": { "title": "Yang Style Tai Chi", "units": 1, "track": "tq" },
+    "EL357": { "title": "Chen Style Tai Chi Sword", "units": 1, "track": "tq" },
+    "EX100": { "title": "First Comprehensive Exam", "units": 1, "track": "ex", "pre": ["CM111", "CM112", "HM110", "HM120", "HM130", "AC201", "AC202", "AC203", "WM151", "WM152", "WM153"] },
+    "EX210": { "title": "Pre-clinical exams (EX210 · EX220)", "units": 2, "track": "ex", "pre": ["AC201", "AC202", "AC203", "AC301", "AC302", "AC310", "CM201", "CM202", "WM211", "WM212", "WM310", "WM220", "CL100"] },
+    "EX300": { "title": "Graduation Exam", "units": 1, "track": "ex", "pre": ["EX210", "WM361", "WM330", "WM431", "CL600"] },
+    "PD340": { "title": "Research", "units": 1, "track": "pd", "pre": ["CL100"] },
+    "PD350": { "title": "Taoist Acupuncture", "units": 1, "track": "pd", "pre": ["AC201", "AC202", "AC203"] },
+    "PD410": { "title": "Integrative Medicine I", "units": 1, "track": "pd", "co": ["CL700"] },
+    "PD450": { "title": "Patient Education & Counseling", "units": 1, "track": "pd", "pre": ["CL100", "WM340"] }
+  }
+}

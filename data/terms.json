@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "_comment": "Which term the app shows. Point 'current' at a file in this folder to switch terms - no code change needed.",
+  "current": "classes-2026-fall.json",
+  "available": ["classes-2026-fall.json"]
+}

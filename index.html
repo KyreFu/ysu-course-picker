@@ -73,6 +73,12 @@
   }
   .mini:hover{border-color:var(--accent);color:var(--accent)}
   .tally{font-size:11px;color:var(--ink-3);font-weight:400;letter-spacing:0;text-transform:none}
+  .pick{
+    flex:1;min-width:0;max-width:60%;font:inherit;font-size:11px;
+    padding:1px 3px;border:1px solid var(--rule-2);border-radius:5px;
+    background:var(--panel);color:var(--ink-2);cursor:pointer;
+  }
+  .pick:hover{border-color:var(--accent);color:var(--accent)}
   .add{
     flex:none;width:19px;height:19px;line-height:1;padding:0;border-radius:5px;
     border:1px solid var(--rule-2);background:var(--panel);color:var(--ink-2);
@@ -80,6 +86,10 @@
   }
   .add:hover{border-color:var(--accent);color:var(--accent)}
   .add.in{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);cursor:pointer}
+  .add:disabled,.add:disabled:hover{
+    opacity:.45;cursor:not-allowed;border-color:var(--rule);
+    background:var(--panel);color:var(--ink-3);
+  }
   .row.bad{background:#fdf1f1;margin:0 -10px;padding-left:10px;padding-right:10px}
   .warn-dot{color:var(--warn);font-size:11px;flex:none}
   .banner{
@@ -146,6 +156,9 @@
   .legend{display:flex;flex-wrap:wrap;gap:5px}
   .lg{font-size:11px;padding:2px 7px;border-radius:4px;border:1px solid}
   .note{font-size:12px;color:var(--ink-3);line-height:1.5}
+  .notes{font-size:12px;color:var(--ink-3);line-height:1.5;margin:0;padding-left:15px}
+  .notes li{margin-bottom:6px}
+  .notes li:last-child{margin-bottom:0}
   .tick{color:var(--accent);font-weight:600}
   .cross{color:var(--ink-3)}
   @media (max-width:900px){
@@ -165,7 +178,7 @@
 
 <header>
   <h1>Prerequisite explorer</h1>
-  <span class="meta">Yo San University · Fall 2026 schedule · MAcCHM &amp; DAcCHM</span>
+  <span class="meta" id="term-label">Yo San University · MAcCHM &amp; DAcCHM</span>
   <span class="meta" style="margin-left:auto">Click any course to trace its chain. Progress saves in this browser only.</span>
 </header>
 
@@ -183,7 +196,7 @@
     <div class="sec">
       <h2>Ready to take now</h2>
       <div class="list" id="ready"></div>
-      <p class="note" style="margin:7px 0 0">Ranked by how much each course unblocks. The number is how many remaining courses toward the selected goal depend on it. <b>&#10003;</b> marks one done, <b>+</b> adds it to your plan.</p>
+      <p class="note" style="margin:7px 0 0">Everything whose prerequisites you've met, ranked by how much it unblocks. The number is how many remaining courses toward the selected goal depend on it. <b>&#10003;</b> marks one done, <b>+</b> adds it to your plan. Courses that don't run this term still appear — you may have taken them already — but <b>+</b> is greyed out.</p>
     </div>
     <div class="sec">
       <h2>My plan <span id="plan-count" class="tally"></span></h2>
@@ -194,8 +207,8 @@
     </div>
     <div class="sec">
       <h2>Non-course requirements</h2>
-      <label class="chk"><input type="checkbox" id="req-hours"> 150 hours clinical theater &amp; observation</label>
-      <label class="chk"><input type="checkbox" id="req-certs"> CPR, first aid and CNT certification</label>
+      <label class="chk"><input type="checkbox" id="req-hours"> <span id="lbl-hours"></span></label>
+      <label class="chk"><input type="checkbox" id="req-certs"> <span id="lbl-certs"></span></label>
       <div class="note" id="qi-note"></div>
     </div>
     <div class="sec">
@@ -240,11 +253,9 @@
       </p>
     </div>
     <div class="sec">
-      <h2>Caveats</h2>
-      <p class="note">
-        EX210 and EX220 are merged into one node — same prerequisites, taken the same term.
-        CM201 also lists CM100 Chinese Medical Terminology, not offered this term and not graphed.
-        EX300 accepts WM360 or WM361; only WM361 runs in Fall 2026.
+      <h2>About this data <span id="notes-src" class="tally"></span></h2>
+      <div id="data-notes"></div>
+      <p class="note" style="margin-top:9px">
         Prerequisites can only be waived by approved Override Petition — check with the registrar before relying on this.
       </p>
     </div>
@@ -254,136 +265,153 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
-<script>
-const TRACKS = {
-  cm:{name:'TCM theory & diagnosis', bg:'#EEEDFE', line:'#7F77DD', ink:'#26215C'},
-  hm:{name:'Herbal medicine',        bg:'#E1F5EE', line:'#1D9E75', ink:'#04342C'},
-  ac:{name:'Acupuncture',            bg:'#FAECE7', line:'#D85A30', ink:'#4A1B0C'},
-  wm:{name:'Biomedicine',            bg:'#E6F1FB', line:'#378ADD', ink:'#042C53'},
-  cl:{name:'Clinical',               bg:'#FBEAF0', line:'#D4537E', ink:'#4B1528'},
-  tq:{name:'Taoist studies & qi',    bg:'#EAF3DE', line:'#639922', ink:'#173404'},
-  ex:{name:'Benchmark exams',        bg:'#FAEEDA', line:'#BA7517', ink:'#412402'},
-  pd:{name:'Doctoral (PD)',          bg:'#F1EFE8', line:'#888780', ink:'#2C2C2A'}
+<script type="module">
+/* Course data lives in data/. This file is the program that draws it and holds
+   no course facts of its own beyond track colours, which are presentation.
+   A module script is used so the data can be awaited at the top level; the
+   rest of the file then runs exactly as if the data had always been here. */
+
+const DATA = 'data/';
+const DATA_SCHEMA = 1;
+
+function dataFailure(what, detail){
+  document.body.innerHTML =
+    '<div style="max-width:34em;margin:14vh auto;padding:0 24px;' +
+    'font:14px/1.6 ui-sans-serif,-apple-system,Segoe UI,Roboto,sans-serif;color:#16211f">' +
+    '<h1 style="font-size:17px;margin:0 0 10px">' + what + '</h1>' +
+    '<p style="color:#5c6a68">' + detail + '</p>' +
+    '<p style="color:#8d9997;font-size:12.5px">This page has to be served over http, ' +
+    'not opened from a file, because it reads its data from the <code>data/</code> folder ' +
+    'alongside it.</p></div>';
+}
+
+async function getJSON(name){
+  let res;
+  // no-cache: replacing a term file on the server must reach people who have
+  // already loaded the page once.
+  try { res = await fetch(DATA + name, { cache:'no-cache' }); }
+  catch(e){ throw new Error(`Could not read data/${name} — ${e.message}`); }
+  if(!res.ok) throw new Error(`Could not read data/${name} — ${res.status} ${res.statusText}`);
+  try { return await res.json(); }
+  catch(e){ throw new Error(`data/${name} is not valid JSON — ${e.message}`); }
+}
+
+function requireSchema(obj, name){
+  if(obj.schemaVersion !== DATA_SCHEMA)
+    throw new Error(`data/${name} declares schema version ${obj.schemaVersion}, but this page understands version ${DATA_SCHEMA}.`);
+}
+
+let CURRICULUM, TERM;
+try {
+  const terms = await getJSON('terms.json');
+  requireSchema(terms, 'terms.json');
+  if(!terms.current) throw new Error('data/terms.json does not name a current term file.');
+  [CURRICULUM, TERM] = await Promise.all([ getJSON('curriculum.json'), getJSON(terms.current) ]);
+  requireSchema(CURRICULUM, 'curriculum.json');
+  requireSchema(TERM, terms.current);
+} catch(err){
+  dataFailure('Course data didn\'t load', err.message);
+  throw err;
+}
+
+// Track colours are presentation, so they stay with the code. The curriculum
+// supplies the ids and names; a track it doesn't declare simply isn't drawn.
+const TRACK_COLOURS = {
+  cm:{ bg:'#EEEDFE', line:'#7F77DD', ink:'#26215C' },
+  hm:{ bg:'#E1F5EE', line:'#1D9E75', ink:'#04342C' },
+  ac:{ bg:'#FAECE7', line:'#D85A30', ink:'#4A1B0C' },
+  wm:{ bg:'#E6F1FB', line:'#378ADD', ink:'#042C53' },
+  cl:{ bg:'#FBEAF0', line:'#D4537E', ink:'#4B1528' },
+  tq:{ bg:'#EAF3DE', line:'#639922', ink:'#173404' },
+  ex:{ bg:'#FAEEDA', line:'#BA7517', ink:'#412402' },
+  pd:{ bg:'#F1EFE8', line:'#888780', ink:'#2C2C2A' }
 };
+/* A track the palette doesn't know about still needs to be told apart from the
+   others, so derive a stable colour from its key rather than making every
+   unknown track the same grey. */
+function derivedColour(key){
+  let h = 0;
+  for(let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) % 360;
+  return { bg:`hsl(${h} 62% 94%)`, line:`hsl(${h} 45% 48%)`, ink:`hsl(${h} 55% 22%)` };
+}
 
-const C = [
-  ['CM111','Principles & Theories I',3,'cm',[],[]],
-  ['CM112','Principles & Theories 2',3,'cm',['CM111'],[]],
-  ['CM113','Principles & Theories 3',2,'cm',['CM111','CM112'],[]],
-  ['CM201','TCM Diagnosis I',3,'cm',['CM111','CM112'],[]],
-  ['CM202','Adv TCM Syndrome Diagnosis',3,'cm',['CM201'],[]],
-  ['CM301','TCM Internal Medicine I',3,'cm',['CM201','CM202','HM210','HM220','HM230'],['AC320']],
-  ['CM302','TCM Internal Medicine II',3,'cm',['CM201','CM202','HM210','HM220','HM230'],['AC320']],
-  ['CM400','Survey of TCM Specialties 1',3,'cm',['CM201','CM202','HM210','HM220','HM230'],['AC320']],
-  ['CM411','Survey of TCM Specialties 2',3,'cm',['CM201','CM202','HM210','HM220','HM230'],['AC320']],
-  ['CM420','Survey of TCM Classics 1',2,'cm',['CM201','CM202','HM210','HM220','HM230'],['AC320']],
-  ['CM421','Survey of TCM Classics 2 (SHL)',3,'cm',['CM201','CM202','HM210','HM220','HM230'],['AC320']],
-
-  ['HM100','Fund. of Chinese Herbology',1,'hm',[],[]],
-  ['HM101','Essential Single Herbs',1,'hm',[],['HM100','CM111']],
-  ['HM110','Herbal Materia Medica 1',3,'hm',['HM100','CM111'],[]],
-  ['HM120','Herbal Materia Medica 2',3,'hm',['HM100','CM111'],[]],
-  ['HM130','Herbal Materia Medica 3',3,'hm',['HM100','CM111'],[]],
-  ['HM111','Herb Lab Lv 1',1,'hm',[],['HM110']],
-  ['HM121','Herb Lab Lv 2',1,'hm',[],['HM120']],
-  ['HM210','Herbal Formulas 1',3,'hm',['HM101','HM110','HM120','HM130','CM201'],[]],
-  ['HM220','Herbal Formulas 2',3,'hm',['HM101','HM110','HM120','HM130','CM201'],[]],
-  ['HM230','Herbal Formulas 3',3,'hm',['HM101','HM110','HM120','HM130','CM201'],[]],
-  ['HM240','TCM Nutrition',2,'hm',['HM110','HM120','HM130','CM112'],[]],
-  ['HM310','Herbal Formula Construction',2,'hm',['CM201','CM202','HM210','HM220','HM230'],[]],
-  ['HM320','Herbal Patents & Ext. Medicines',2,'hm',['CM201','CM202','HM210','HM220','HM230'],[]],
-
-  ['AC100','Intro to Meridian Theory',2,'ac',[],[]],
-  ['AC201','Acupuncture 1',3,'ac',['AC100'],['WM151']],
-  ['AC202','Acupuncture 2',3,'ac',['AC100'],['WM151']],
-  ['AC203','Acupuncture 3',3,'ac',['AC100'],['WM151']],
-  ['AC220','Tuina & Acupressure',3,'ac',['AC100'],[]],
-  ['AC301','Acupuncture Techniques I',3,'ac',['AC201','AC202','AC203','CM111','CM112'],[]],
-  ['AC302','Acupuncture Techniques II',3,'ac',['AC301'],[]],
-  ['AC310','Auricular & Scalp Acupuncture',2,'ac',['AC301'],[]],
-  ['AC320','Acupuncture Point Therapeutics',3,'ac',['AC201','AC202','AC203','CM111','CM112'],[]],
-
-  ['WM110','Biology',2,'wm',[],[]],
-  ['WM120','Chemistry',2,'wm',[],[]],
-  ['WM130','Biochemistry',2,'wm',['WM110','WM120'],[]],
-  ['WM140','Physics',2,'wm',[],[]],
-  ['WM151','Anatomy & Physiology 1',3,'wm',[],[]],
-  ['WM152','Anatomy & Physiology 2',3,'wm',['WM151'],['WM110']],
-  ['WM153','Anatomy & Physiology 3',3,'wm',['WM151'],['WM110']],
-  ['WM160','General Psychology',2,'wm',[],[]],
-  ['WM211','Pathophysiology I',3,'wm',['WM151','WM152','WM153','WM130'],[]],
-  ['WM212','Pathophysiology II',3,'wm',['WM211'],[]],
-  ['WM220','Western Clinical Nutrition',3,'wm',['WM151','WM152','WM153','WM130'],[]],
-  ['WM230','History of Medicine',2,'wm',[],[]],
-  ['WM310','Western Physical Assessment',3,'wm',['WM211'],['WM212']],
-  ['WM321','Western Clinical Medicine 1',3,'wm',['WM211','WM212','WM310'],[]],
-  ['WM322','Western Clinical Medicine 2',3,'wm',['WM211','WM212','WM310'],[]],
-  ['WM330','Medical Imaging & Lab Diagnosis',2,'wm',['WM211','WM212'],[]],
-  ['WM340','Mental Wellness & Patient Care Psych.',2,'wm',['WM160'],[],[['CL310','CL400']]],
-  ['WM361','Integrative Pharmacology',3,'wm',['WM130','WM211','WM212'],[]],
-  ['WM370','Biomedical Acupuncture',1,'wm',[],[]],
-  ['WM420','Principles of Public Health',2,'wm',['WM211','WM212'],[],[['CL310','CL400']]],
-  ['WM431','Healthcare Law & Ethics',1,'wm',[],[],[['CL700','CL800']]],
-  ['WM432','Healthcare Business Management',2,'wm',[],['CL600']],
-
-  ['CL100','Intro to Patient Care',2,'cl',[],['CM201']],
-  ['CL310','Clinical Theater',1,'cl',['CL100'],[]],
-  ['CL400','Clinical Observation',1,'cl',['CL100'],[]],
-  ['CL600','Practice Internship Lv 1',2,'cl',['EX210','CL100','CM201','CM202','HM210','HM220','HM230','AC301','AC302','WM211','WM212','WM310'],[],[],['hours','certs','qi']],
-  ['CL700','Practice Internship Lv 2',2,'cl',['CL600'],[]],
-  ['CL800','Practice Internship Lv 3',2,'cl',['CL700'],[]],
-  ['CL880','Externship',1,'cl',['CL600'],[]],
-  ['CL611','Integrative Case Studies',1,'cl',[],['CL600']],
-  ['CL711','Integrative Case Studies',1,'cl',[],['CL700']],
-  ['CL811','Integrative Case Studies',1,'cl',[],['CL800']],
-
-  ['TO100','Taoism I',1,'tq',[],[]],
-  ['TO200','Taoism II: Natural Healing',1,'tq',['TO100'],[]],
-  ['TO300','Taoism III: Healthcare Practitioner',1,'tq',['TO100','TO200'],[]],
-  ['QC110','Self-Healing Qi Gong',1,'tq',[],[]],
-  ['QC120','Eight Treasures Qi Gong',1,'tq',[],[]],
-  ['QC140','Infinichi Qi Gong',1,'tq',[],[]],
-  ['QC252','Dao-In Qi Gong Level 3',1,'tq',[],[]],
-  ['EL346','Yang Style Tai Chi',1,'tq',[],[]],
-  ['EL357','Chen Style Tai Chi Sword',1,'tq',[],[]],
-
-  ['EX100','First Comprehensive Exam',1,'ex',['CM111','CM112','HM110','HM120','HM130','AC201','AC202','AC203','WM151','WM152','WM153'],[]],
-  ['EX210','Pre-clinical exams (EX210 · EX220)',2,'ex',['AC201','AC202','AC203','AC301','AC302','AC310','CM201','CM202','WM211','WM212','WM310','WM220','CL100'],[]],
-  ['EX300','Graduation Exam',1,'ex',['EX210','WM361','WM330','WM431','CL600'],[]],
-
-  ['PD340','Research',1,'pd',['CL100'],[]],
-  ['PD350','Taoist Acupuncture',1,'pd',['AC201','AC202','AC203'],[]],
-  ['PD410','Integrative Medicine I',1,'pd',[],['CL700']],
-  ['PD450','Patient Education & Counseling',1,'pd',['CL100','WM340'],[]]
-];
+const TRACKS = {};
+Object.entries(CURRICULUM.tracks).forEach(([k, t]) =>
+  TRACKS[k] = Object.assign({ name:t.name }, TRACK_COLOURS[k] || derivedColour(k)));
 
 const DB = {};
-C.forEach(r => DB[r[0]] = {
-  id:r[0], title:r[1], units:r[2], track:r[3],
-  pre:r[4]||[], co:r[5]||[], anyOf:r[6]||[], flags:r[7]||[]
+Object.entries(CURRICULUM.courses).forEach(([code, c]) => DB[code] = {
+  id:code, title:c.title, units:c.units, track:c.track,
+  pre:c.pre||[], co:c.co||[], anyOf:c.anyOf||[], flags:c.flags||[]
 });
 
-const QI = ['QC110','QC120','QC140','QC252','EL346','EL357'];
+/* A series is a course taken several times, each enrolment a separate course
+   with its own units. Membership is declared in curriculum.json and never
+   inferred from a code: CL600A-E carry a letter, QC130/QC131 do not, and a
+   -1/-2 in a term schedule means another opening rather than a series member.
 
-const MEET = {
-  CM111:'Th 9a-12p', CM112:'M 9a-12p', CM113:'Tu 9a-11a', CM201:'W 6p-9p', CM202:'Tu 5p-8p',
-  CM301:'Th 1p-4p', CM302:'M 2p-5p', CM400:'W 12p-3p', CM411:'Th 2p-5p', CM420:'M 2p-5p', CM421:'Th 9a-12p',
-  HM100:'Th 1p-3p', HM101:'W 10a-12p', HM110:'Tu 1p-4p', HM120:'M 6p-9p', HM130:'Tu 5p-8p | W 1p-4p',
-  HM210:'W 5p-8p | Tu 1p-4p', HM220:'W 9a-12p', HM230:'Th 9a-12p', HM240:'Tu 9a-12p',
-  HM310:'W 10a-12p', HM320:'M 9a-12p',
-  AC100:'M 10a-12p', AC201:'M 3p-6p | Th 9a-12p', AC202:'Th 12p-3p', AC203:'Th 1p-4p',
-  AC220:'W 1p-4p', AC301:'M 9a-12p | M 12p-3p', AC302:'M 1p-4p', AC310:'Th 3p-5p', AC320:'W 5p-8p',
-  WM110:'Tu 2p-4p', WM120:'M 1p-3p', WM130:'M 1p-3p', WM140:'Tu 6p-8p', WM151:'Tu 5p-8p',
-  WM152:'M 6p-9p', WM153:'W 9a-12p', WM160:'Tu 9a-11a', WM211:'Th 5p-8p', WM212:'Tu 1p-4p',
-  WM220:'W 6p-9p | M 8a-11a', WM230:'Tu 11a-1p', WM310:'Tu 9a-12p', WM321:'W 1p-4p', WM322:'M 5p-8p',
-  WM330:'W 4:30p-6:30p', WM340:'Tu 5p-7p', WM361:'Tu 9a-12p', WM370:'W 9a-11a', WM420:'Tu 12p-2p',
-  WM431:'Th 5p-8p', WM432:'M 6p-8p',
-  CL100:'W 1p-4p', CL310:'M 1p-4p | Tu 9a-12p', CL611:'W 10a-12p', CL711:'Tu 9a-12p', CL811:'M 12p-3p',
-  TO100:'M 9a-10a', TO200:'Th 9a-10a', TO300:'M 9a-10a',
-  QC110:'M 11a-12p', QC120:'Th 11a-12p', QC140:'M 10a-11a', QC252:'Tu 9a-10:30a',
-  EL346:'Th 6p-7p', EL357:'W 12p-1p',
-  PD340:'F 1p-4p', PD350:'Sa 8a-4:30p', PD410:'Sa 8a-4:30p', PD450:'F 9a-12p'
-};
+   Everything outside this block treats a series id as if it were a course:
+   it has prerequisites, it appears once on the graph, and other courses
+   require it. What differs is that it is satisfied only when all of its
+   required members are complete. */
+// Series records join DB as if they were courses, so the graph, the lists and
+// the readiness logic can treat them the same way. Their units are the sum of
+// their members'.
+function addSeriesToDB(){
+  Object.entries(SERIES).forEach(([sid, s]) => DB[sid] = {
+    id:sid, title:s.title, units:seriesUnits(sid), track:s.track,
+    pre:s.pre||[], co:s.co||[], anyOf:s.anyOf||[], flags:s.flags||[],
+    isSeries:true
+  });
+}
+
+const SERIES = CURRICULUM.series || {};
+const SERIES_OF = {};                       // member id -> series id
+Object.entries(SERIES).forEach(([sid, s]) =>
+  (s.members || []).forEach(m => SERIES_OF[m] = sid));
+
+const isSeries = id => Object.prototype.hasOwnProperty.call(SERIES, id);
+const seriesOf = id => SERIES_OF[id] || null;
+const membersOf = sid => (SERIES[sid] || {}).members || [];
+const isMember = id => !!SERIES_OF[id];
+
+// How many of a series are finished, and whether that is enough.
+function seriesDone(sid){
+  return membersOf(sid).filter(m => done.has(m)).length;
+}
+function seriesComplete(sid){
+  return seriesDone(sid) >= (SERIES[sid].required || membersOf(sid).length);
+}
+function seriesUnits(sid){
+  return membersOf(sid).reduce((a, m) => a + ((DB[m] && DB[m].units) || 0), 0);
+}
+
+addSeriesToDB();
+
+const REQS = CURRICULUM.requirements || {};
+const reqLabel = f => (REQS[f] && REQS[f].label) || f;
+
+const GOALS = CURRICULUM.goals;
+const QI = ((CURRICULUM.requirements||{}).qi||{}).countsToward || [];
+const QI_UNITS = ((CURRICULUM.requirements||{}).qi||{}).units || 4;
+
+// Which courses actually run this term, and their sections.
+/* Every string below comes from a file someone else maintains, so none of it is
+   trusted as markup. A title containing an ampersand, a quote or an angle
+   bracket must appear as typed, not disappear into the DOM. */
+const esc = s => String(s == null ? '' : s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+const SECTIONS = TERM.classes || {};
+const hasClasses = id => Object.prototype.hasOwnProperty.call(SECTIONS, id);
+// The class file is keyed by member, so a series runs if any part of it does.
+const isOffered = id => isSeries(id) ? membersOf(id).some(hasClasses) : hasClasses(id);
+
+// What the graph and the course list show: series stand in for their members,
+// so a five-part internship is one node and one row, not five.
+const shown = id => !isMember(id);
+
 
 function mins(t){
   const m = t.match(/^(\d{1,2})(?::(\d{2}))?([ap])$/);
@@ -392,24 +420,133 @@ function mins(t){
   if(m[3] === 'p') h += 12;
   return h*60 + (m[2] ? +m[2] : 0);
 }
+/* One entry per section that meets, each holding all of that section's times —
+   a section can meet more than once a week. A section with no meetings has an
+   arranged time: it never enters the week grid and never counts as a conflict. */
 const SLOTS = {};
-Object.entries(MEET).forEach(([id, str]) => {
-  SLOTS[id] = str.split('|').map(sec => {
-    const m = sec.trim().match(/^(M|Tu|W|Th|F|Sa)\s+(\S+)-(\S+)$/);
-    return m ? { day:m[1], a:mins(m[2]), b:mins(m[3]) } : null;
-  }).filter(Boolean);
+Object.entries(SECTIONS).forEach(([id, sections]) => {
+  const secs = [];
+  sections.forEach(s => {
+    const times = (s.meetings||[]).map(m => ({ day:m.day, a:mins(m.start), b:mins(m.end) }))
+      .filter(t => t.a !== null && t.b !== null);
+    if(times.length) secs.push({ section:s.section, times, instructor:s.instructor, mode:s.mode });
+  });
+  if(secs.length) SLOTS[id] = secs;
 });
 
-function sectionsClash(x, y){
+function timesClash(x, y){
   return x.day === y.day && x.a < y.b && y.a < x.b;
 }
+function sectionsClash(A, B){
+  return A.times.some(x => B.times.some(y => timesClash(x, y)));
+}
+
+/* Which sections are still on the table for a planned course. Once the student
+   has chosen one, that is the only option; until then every section counts, and
+   a conflict is only reported when no combination avoids it. */
+function optionsFor(id){
+  const secs = SLOTS[id] || [];
+  const pick = plan.get(id);
+  if(pick == null) return secs;
+  const one = secs.filter(s => s.section === pick);
+  return one.length ? one : secs;
+}
+function chosenSection(id){
+  const pick = plan.get(id);
+  return pick == null ? null : (SLOTS[id]||[]).find(s => s.section === pick) || null;
+}
+// Worth saying when a clash survives every section rather than just one.
+function allSections(id){
+  const n = optionsFor(id).length;
+  return n > 1 ? ` (all ${n} sections)` : '';
+}
 function conflicts(idA, idB){
-  const A = SLOTS[idA], B = SLOTS[idB];
-  if(!A || !B || !A.length || !B.length) return false;
+  const A = optionsFor(idA), B = optionsFor(idB);
+  if(!A.length || !B.length) return false;
   return A.every(a => B.every(b => sectionsClash(a, b)));
 }
+// Compact one-line description of a section, for the chooser.
+function sectionSummary(s){
+  const when = s.times.map(t => `${t.day} ${fmt(t.a)}-${fmt(t.b)}`).join(', ');
+  return s.instructor ? `${when} · ${esc(s.instructor)}` : when;
+}
+function fmt(m){
+  const h = Math.floor(m/60), mm = m % 60;
+  const ap = h >= 12 ? 'p' : 'a';
+  const hh = h % 12 === 0 ? 12 : h % 12;
+  return mm ? `${hh}:${String(mm).padStart(2,'0')}${ap}` : `${hh}${ap}`;
+}
+
+function sectionTime(s){
+  const ms = s.meetings || [];
+  return ms.length ? ms.map(m => `${m.day} ${m.start}-${m.end}`).join(', ') : 'time arranged';
+}
 function meetLabel(id){
-  return MEET[id] || 'time arranged';
+  if(!isOffered(id)) return 'not offered this term';
+  const timed = (SECTIONS[id] || []).filter(s => (s.meetings||[]).length);
+  return timed.length ? timed.map(sectionTime).join(' | ') : 'time arranged';
+}
+function modeLabel(m){
+  return m === 'in-person' ? 'in person' : m === 'online' ? 'online' : m === 'hybrid' ? 'hybrid' : '';
+}
+
+// Sections are listed rather than packed into one line, because instructor and
+// delivery mode belong to a section, not to a course.
+/* A series lists its parts, each with its own sections, instructor and mode.
+   This is where you choose which one you are taking — the series itself is
+   never marked complete or planned directly. */
+function seriesBlock(sid){
+  const req = SERIES[sid].required || membersOf(sid).length;
+  const have = seriesDone(sid);
+  return `<h2 style="margin-top:16px">Parts (${have} of ${req} complete)</h2>
+    <div class="list">${membersOf(sid).map(m => {
+      const runs = hasClasses(m);
+      const when = runs ? (SECTIONS[m]||[]).map(s => {
+        const bits = [esc(sectionTime(s))];
+        if(s.instructor) bits.push(esc(s.instructor));
+        if(modeLabel(s.mode)) bits.push(modeLabel(s.mode));
+        return bits.join(' · ');
+      }).join(' | ') : `not offered ${esc(TERM.label)}`;
+      return `<div class="row">
+        <span class="code">${statusMark(m)} ${m}</span>
+        <span class="nm">${when}</span>
+        <button class="add ${done.has(m)?'in':''}" data-done="${m}" title="${done.has(m)?'Mark not completed':'Mark completed'}">&#10003;</button>
+        ${done.has(m) ? ''
+          : runs
+            ? `<button class="add ${plan.has(m)?'in':''}" data-add="${m}" title="${plan.has(m)?'Remove from plan':'Add this part to plan'}">${plan.has(m)?'&minus;':'+'}</button>`
+            : `<button class="add" disabled title="Not offered ${esc(TERM.label)} — you can still mark it completed">+</button>`}
+      </div>`;
+    }).join('')}</div>
+    <p class="note" style="margin:7px 0 0">All ${req} parts are required. Anything that needs ${sid} unlocks only when every part is complete.</p>`;
+}
+
+function sectionsBlock(id){
+  if(isSeries(id)) return seriesBlock(id);
+  if(!isOffered(id))
+    return `<h2 style="margin-top:16px">Sections</h2>
+      <div class="empty">Not offered ${esc(TERM.label)}. It stays on the graph so chains that pass through it stay readable.</div>`;
+  const secs = SECTIONS[id] || [];
+  const pick = plan.get(id);
+  const timed = (SLOTS[id] || []).length > 0;
+  return `<h2 style="margin-top:16px">Sections (${secs.length})</h2>
+    <div class="list">${secs.map(s => {
+      const bits = [];
+      if(s.instructor) bits.push(esc(s.instructor));
+      if(modeLabel(s.mode)) bits.push(modeLabel(s.mode));
+      const taking = plan.has(id) && pick === s.section;
+      return `<div class="row" style="cursor:default">
+        <span class="code">${esc(sectionTime(s))}</span>
+        <span class="nm">${bits.length ? bits.join(' · ') : '—'}</span>
+        ${timed ? `<button class="add ${taking?'in':''}" data-take="${id}|${esc(s.section)}"
+            title="${taking ? 'Taking this one — click to leave the section open' : 'Take this section'}">${taking?'&#10003;':'+'}</button>` : ''}
+      </div>`;
+    }).join('')}</div>
+    ${secs.length > 1 ? `<p class="note" style="margin:7px 0 0">${
+      plan.has(id) && pick != null
+        ? 'Your plan uses this section.'
+        : plan.has(id)
+          ? 'No section chosen, so the week grid shows whichever one fits.'
+          : 'Pick one to add it to your plan with that section.'}</p>` : ''}`;
 }
 
 function lerp(a, b, t){
@@ -425,22 +562,17 @@ function impStyle(count, max){
   return `background:${lerp('#FAEEDA','#EF9F27',e)};border-color:${lerp('#FAC775','#854F0B',e)};color:${lerp('#854F0B','#412402',e)}`;
 }
 
-const GOALS = [
-  {id:'ALL',   name:'Whole program',        sub:'Everything on the Fall 2026 schedule'},
-  {id:'EX100', name:'First Comprehensive',  sub:'End of the foundational sequence'},
-  {id:'EX210', name:'Pre-clinical exams',   sub:'The gate into practice internship'},
-  {id:'EX300', name:'Graduation Exam',      sub:'Full path to the degree'}
-];
 
 let done = new Set();
-let plan = new Set();
+let plan = new Map();   // course id -> chosen section id, or null for "any"
 let extra = {hours:false, certs:false};
 let goal = 'ALL';
 let selected = null;
 let query = '';
 
 const STORE_KEY = 'ysu-prereq';
-const SCHEMA = 1;
+// v2: the plan records which section was chosen, not just which course.
+const SCHEMA = 2;
 let storageOk = true;
 let lastSaved = null;
 
@@ -450,7 +582,8 @@ function snapshot(){
     v:SCHEMA,
     saved:new Date().toISOString(),
     done:[...done].sort(),
-    plan:[...plan].sort(),
+    // { courseId: chosenSectionId | null }
+    plan:Object.fromEntries([...plan.entries()].sort((a,b) => a[0].localeCompare(b[0]))),
     extra:{ hours:!!extra.hours, certs:!!extra.certs }
   };
 }
@@ -460,10 +593,17 @@ function restore(obj){
   if(obj.app !== 'ysu-prereq-explorer') throw new Error('That isn\'t a progress file from this tool.');
   if(typeof obj.v === 'number' && obj.v > SCHEMA) throw new Error('That file was saved by a newer version of this tool.');
   const arr = x => Array.isArray(x) ? x : [];
-  const all = [...arr(obj.done), ...arr(obj.plan)];
+  // v2 stores the plan as { courseId: chosenSectionId | null }.
+  const planEntries = (obj.plan && !Array.isArray(obj.plan) && typeof obj.plan === 'object')
+    ? Object.entries(obj.plan) : [];
+  const all = [...arr(obj.done), ...planEntries.map(e => e[0])];
   const dropped = [...new Set(all.filter(id => !DB[id]))];
   done  = new Set(arr(obj.done).filter(id => DB[id]));
-  plan  = new Set(arr(obj.plan).filter(id => DB[id]));
+  plan  = new Map(planEntries.filter(([id]) => DB[id]).map(([id, sec]) => {
+    // a section that no longer exists falls back to "any"
+    const ok = sec != null && (SLOTS[id]||[]).some(s => s.section === sec);
+    return [id, ok ? sec : null];
+  }));
   extra = { hours:!!(obj.extra && obj.extra.hours), certs:!!(obj.extra && obj.extra.certs) };
   return { dropped, saved:obj.saved };
 }
@@ -567,14 +707,23 @@ function qiUnits(){
   return QI.filter(q => done.has(q)).reduce((a,q) => a + DB[q].units, 0);
 }
 function flagOk(f){
-  if(f === 'qi') return qiUnits() >= 4;
+  if(f === 'qi') return qiUnits() >= QI_UNITS;
   return !!extra[f];
 }
+/* "Finished" for a plain course means it is marked done. For a series it means
+   enough of its members are done — a series id is never itself in `done`.
+   Everything that asks whether a requirement is met goes through here. */
+function satisfied(id){
+  return isSeries(id) ? seriesComplete(id) : done.has(id);
+}
+
 function ready(id){
+  // A member inherits its series' prerequisites; it has none of its own.
+  if(isMember(id)) return ready(seriesOf(id));
   const n = DB[id];
   if(!n) return false;
-  if(!n.pre.every(p => done.has(p))) return false;
-  if(!n.anyOf.every(g => g.some(p => done.has(p)))) return false;
+  if(!n.pre.every(satisfied)) return false;
+  if(!n.anyOf.every(g => g.some(satisfied))) return false;
   if(!n.flags.every(flagOk)) return false;
   return true;
 }
@@ -640,8 +789,13 @@ function impact(id, s){
 }
 
 const els = [];
-Object.values(DB).forEach(n => els.push({data:{id:n.id, label:`${n.id}\n${n.title}\n${n.units} unit${n.units>1?'s':''}`, track:n.track}}));
-Object.values(DB).forEach(n => {
+Object.values(DB).filter(n => shown(n.id)).forEach(n => {
+  const parts = isSeries(n.id) ? membersOf(n.id).length : 0;
+  const size = parts ? `${parts} × ${DB[membersOf(n.id)[0]].units} units` : `${n.units} unit${n.units>1?'s':''}`;
+  els.push({ data:{ id:n.id, track:n.track, offered: isOffered(n.id) ? 1 : 0,
+    label:`${n.id}\n${n.title}\n${isOffered(n.id) ? size : 'not this term'}` }});
+});
+Object.values(DB).filter(n => shown(n.id)).forEach(n => {
   directPre(n).forEach(p => DB[p] && els.push({data:{id:`${p}->${n.id}`, source:p, target:n.id, kind:'hard'}}));
   n.co.forEach(p => DB[p] && els.push({data:{id:`${p}~>${n.id}`, source:p, target:n.id, kind:'co'}}));
   n.anyOf.forEach(g => g.forEach(p => DB[p] && els.push({data:{id:`${p}?>${n.id}`, source:p, target:n.id, kind:'co'}})));
@@ -669,6 +823,12 @@ const cy = cytoscape({
         'color':'#ffffff','border-color':ele => TRACKS[ele.data('track')].ink
     }},
     { selector:'node.ready', style:{ 'border-width':3.5,'border-color':'#0f6e56' }},
+    // in the curriculum but not running this term: still on the graph, so a
+    // chain never breaks, but visibly not something you can register for
+    { selector:'node[offered = 0]', style:{
+        'background-color':'#ffffff','border-style':'dashed',
+        'color':ele => TRACKS[ele.data('track')].ink, 'opacity':0.75
+    }},
     { selector:'node.pick',  style:{ 'border-width':4,'border-color':'#16211f' }},
     { selector:'node.dim',   style:{ 'opacity':0.12 }},
     { selector:'node.hide',  style:{ 'display':'none' }},
@@ -768,18 +928,24 @@ function focus(id){
 }
 
 function statusMark(id){
-  return done.has(id) ? '<span class="tick">✓</span>' : '<span class="cross">○</span>';
+  return satisfied(id) ? '<span class="tick">✓</span>' : '<span class="cross">○</span>';
+}
+// "3 of 5" for a part-finished series, blank for anything else.
+function seriesProgress(id){
+  if(!isSeries(id)) return '';
+  const n = seriesDone(id), req = SERIES[id].required || membersOf(id).length;
+  return n && n < req ? `${n} of ${req}` : '';
 }
 
 function browseMark(id){
-  if(done.has(id)) return '<span class="tick">✓</span>';
+  if(satisfied(id)) return '<span class="tick">✓</span>';
   return ready(id) ? '<span class="tick">○</span>' : '<span class="cross">○</span>';
 }
 
 // Courses the current goal requires, narrowed by the search box. Searching is
 // scoped to the goal on purpose: anything outside it has no node to focus.
 function matches(){
-  const ids = [...scope()].filter(id => DB[id]).filter(id => {
+  const ids = [...scope()].filter(id => DB[id] && shown(id)).filter(id => {
     if(!query) return true;
     const n = DB[id];
     return id.toLowerCase().includes(query)
@@ -798,7 +964,7 @@ function renderBrowse(){
   box.innerHTML = list.length
     ? list.map(n => `<div class="row" data-go="${n.id}">
         <span class="code">${browseMark(n.id)} ${n.id}</span>
-        <span class="nm">${n.title}</span>
+        <span class="nm">${isOffered(n.id) ? esc(n.title) : `${esc(n.title)} · not this term`}</span>
       </div>`).join('')
     : `<div class="empty">${query
         ? 'Nothing matches inside this goal — try the Whole program goal.'
@@ -827,28 +993,31 @@ function renderDetail(){
     ...n.anyOf.map(g => ({id:g.join(' or '), tag:'one of', ok:g.some(x => done.has(x))}))
   ];
   const flagRows = n.flags.map(f => ({
-    label: f==='hours' ? '150 hrs theater & observation'
-         : f==='certs' ? 'CPR, first aid, CNT certs'
-         : `4 units qi cultivation (have ${qiUnits()})`,
+    // Labels come from the data, so renaming a requirement renames it here too.
+    label: REQS[f] && REQS[f].kind === 'units'
+      ? `${reqLabel(f)} — have ${qiUnits()}`
+      : reqLabel(f),
     ok: flagOk(f)
   }));
   box.innerHTML = `
     <button class="lnk" id="back" style="margin-bottom:10px">&larr; All courses</button>
     <h2>Course detail</h2>
-    <h3>${n.id} · ${n.title}</h3>
-    <div class="dsub">${n.units} unit${n.units>1?'s':''} · ${meetLabel(n.id)}</div>
-    <span class="pill" style="background:${t.bg};border-color:${t.line};color:${t.ink}">${t.name}</span>
+    <h3>${n.id} · ${esc(n.title)}</h3>
+    <div class="dsub">${n.units} unit${n.units>1?'s':''} · ${esc(meetLabel(n.id))}</div>
+    <span class="pill" style="background:${t.bg};border-color:${t.line};color:${t.ink}">${esc(t.name)}</span>
     ${done.has(n.id) ? '<span class="pill" style="background:#e1f5ee;border-color:#0f6e56;color:#04342C">completed</span>'
+      : !isOffered(n.id) ? `<span class="pill" style="background:#f2f3f1;border-color:#cdd1cd;color:#5c6a68">not offered ${esc(TERM.label)}</span>`
       : ready(n.id) ? '<span class="pill" style="background:#e1f5ee;border-color:#0f6e56;color:#04342C">ready to take</span>'
       : '<span class="pill" style="background:#faeeda;border-color:#BA7517;color:#412402">blocked</span>'}
-    <div style="margin:12px 0;display:flex;gap:7px">
+    ${isSeries(n.id) ? '' : `<div style="margin:12px 0;display:flex;gap:7px">
       <button class="btn ${done.has(n.id)?'off':''}" id="toggle">
         ${done.has(n.id) ? 'Mark not completed' : 'Mark completed'}
       </button>
-      <button class="btn off" id="plan-btn">
+      ${isOffered(n.id) ? `<button class="btn off" id="plan-btn">
         ${plan.has(n.id) ? 'Remove from plan' : 'Add to plan'}
-      </button>
-    </div>
+      </button>` : ''}
+    </div>`}
+    ${sectionsBlock(n.id)}
     <h2 style="margin-top:16px">Needs (${reqRows.length + flagRows.length})</h2>
     <div class="list">${
       (reqRows.length + flagRows.length) === 0 ? '<div class="empty">No prerequisites.</div>' :
@@ -857,14 +1026,14 @@ function renderDetail(){
         <span class="nm">${r.tag}</span></div>`).join('') +
       flagRows.map(r => `<div class="row" style="cursor:default">
         <span class="code">${r.ok?'<span class="tick">✓</span>':'<span class="cross">○</span>'} —</span>
-        <span class="nm">${r.label}</span></div>`).join('')
+        <span class="nm">${esc(r.label)}</span></div>`).join('')
     }</div>
     <h2 style="margin-top:16px">Unlocks (${unlocks.length})</h2>
     <div class="list">${
       unlocks.length === 0 ? '<div class="empty">Nothing depends on this course.</div>' :
       unlocks.map(m => `<div class="row" data-go="${m.id}">
         <span class="code">${m.id}</span>
-        <span class="nm">${m.title}</span></div>`).join('')
+        <span class="nm">${esc(m.title)}</span></div>`).join('')
     }</div>`;
   const back = document.getElementById('back');
   if(back) back.onclick = () => focus(null);
@@ -872,6 +1041,19 @@ function renderDetail(){
   if(btn) btn.onclick = () => toggleDone(n.id);
   const pb = document.getElementById('plan-btn');
   if(pb) pb.onclick = () => togglePlan(n.id);
+  // Per-part buttons inside a series listing.
+  box.querySelectorAll('[data-done]').forEach(b =>
+    b.onclick = e => { e.stopPropagation(); toggleDone(b.getAttribute('data-done')); });
+  box.querySelectorAll('[data-add]').forEach(b =>
+    b.onclick = e => { e.stopPropagation(); togglePlan(b.getAttribute('data-add')); });
+  box.querySelectorAll('[data-take]').forEach(b =>
+    b.onclick = e => {
+      e.stopPropagation();
+      const [cid, sec] = b.getAttribute('data-take').split('|');
+      // clicking the section you already hold releases the choice
+      if(plan.has(cid) && plan.get(cid) === sec) chooseSection(cid, '');
+      else planSection(cid, sec);
+    });
   box.querySelectorAll('[data-go]').forEach(el => {
     const id = el.getAttribute('data-go');
     if(id) el.onclick = () => focus(id);
@@ -892,7 +1074,7 @@ function renderGoals(){
              <span>${gotU} / ${units} units</span></div>`;
     }
     return `<button class="goal ${goal===g.id?'on':''}" data-g="${g.id}">
-      <span class="gt">${g.name}</span><div class="gs">${g.sub}</div>${bar}</button>`;
+      <span class="gt">${esc(g.name)}</span><div class="gs">${esc(g.sub)}</div>${bar}</button>`;
   }).join('');
   document.querySelectorAll('[data-g]').forEach(b => b.onclick = () => {
     goal = b.getAttribute('data-g');
@@ -907,7 +1089,10 @@ function renderGoals(){
 function rankedReady(){
   const s = scope();
   return Object.values(DB)
-    .filter(n => s.has(n.id) && !done.has(n.id) && ready(n.id))
+    // Not offered this term does not mean unfinishable: a student may have
+    // taken it in an earlier term, so it still belongs here to be ticked off.
+    // What it cannot be is added to this term's plan.
+    .filter(n => shown(n.id) && s.has(n.id) && !satisfied(n.id) && ready(n.id))
     .map(n => ({ n, i:impact(n.id, s) }))
     .sort((a,b) =>
       b.i.count - a.i.count ||
@@ -916,13 +1101,15 @@ function rankedReady(){
       a.n.id.localeCompare(b.n.id));
 }
 
+// Fits the planned courses together. A section the student has chosen is fixed;
+// the solver only searches over the ones still left open.
 function assignSections(ids){
-  const timed = ids.filter(id => SLOTS[id] && SLOTS[id].length);
+  const timed = ids.filter(id => optionsFor(id).length);
   const out = {};
   function bt(i){
     if(i === timed.length) return true;
     const id = timed[i];
-    for(const sec of SLOTS[id]){
+    for(const sec of optionsFor(id)){
       let ok = true;
       for(let j = 0; j < i; j++){
         if(sectionsClash(sec, out[timed[j]])){ ok = false; break; }
@@ -944,35 +1131,74 @@ function clashPairs(ids){
 }
 
 function toggleDone(id){
-  done.has(id) ? done.delete(id) : done.add(id);
-  if(done.has(id)) plan.delete(id);
+  if(isSeries(id)){
+    // A series is finished one part at a time, so there is no single click that
+    // completes it. Undoing it clears every part.
+    membersOf(id).forEach(m => { done.delete(m); plan.delete(m); });
+  } else {
+    done.has(id) ? done.delete(id) : done.add(id);
+    if(done.has(id)) plan.delete(id);
+  }
   save(); paint(); renderAll();
 }
 
+// Put a course in the plan and choose which section, in one go.
+function planSection(id, section){
+  if(!isOffered(id)) return;
+  plan.set(id, section);
+  save(); renderPlan(); renderReady(); renderDetail();
+}
+function chooseSection(id, section){
+  if(!plan.has(id)) return;
+  plan.set(id, section === '' ? null : section);
+  save(); renderPlan(); renderDetail();
+}
+
 function togglePlan(id){
-  plan.has(id) ? plan.delete(id) : plan.add(id);
+  // A course that doesn't run this term can be marked complete but not planned.
+  if(!plan.has(id) && !isOffered(id)) return;
+  plan.has(id) ? plan.delete(id) : plan.set(id, null);
   save(); renderPlan(); renderReady(); renderDetail();
 }
 
 const DAYS = ['M','Tu','W','Th','F','Sa'];
-const DAY_START = 480, DAY_END = 1260;
+
+/* The grid used to assume an 8a-9p day. Any class the registrar puts outside
+   that was silently clipped, so the window is taken from the data instead:
+   the earliest start and latest end actually scheduled, rounded to the hour
+   and never narrower than 8a-9p. */
+const [DAY_START, DAY_END] = (() => {
+  let lo = 8*60, hi = 21*60;
+  Object.values(SLOTS).forEach(secs => secs.forEach(s => s.times.forEach(t => {
+    if(t.a < lo) lo = t.a;
+    if(t.b > hi) hi = t.b;
+  })));
+  return [Math.floor(lo/60)*60, Math.ceil(hi/60)*60];
+})();
 
 function renderWeek(ids, assign){
   const wk = document.getElementById('week');
-  const timed = ids.filter(id => SLOTS[id] && SLOTS[id].length);
+  const timed = ids.filter(id => optionsFor(id).length);
   if(!timed.length){ wk.className = 'wk'; wk.innerHTML = ''; return; }
   wk.className = 'wk on';
   const span = DAY_END - DAY_START;
   const hours = [];
-  for(let h = 8; h <= 20; h += 2)
+  for(let h = DAY_START/60; h <= DAY_END/60 - 1; h += 2)
     hours.push(`<i style="top:${100*(h*60-DAY_START)/span}%">${h>12?h-12:h}${h>=12?'p':'a'}</i>`);
-  const placed = timed.map(id => ({ id, sec: (assign && assign[id]) || SLOTS[id][0] }));
+  // One block per meeting, since a section can meet more than once a week.
+  const blocks = [];
+  timed.forEach(id => {
+    const sec = (assign && assign[id]) || optionsFor(id)[0];
+    if(sec) sec.times.forEach(t => blocks.push({ id, sec, t }));
+  });
   const cols = DAYS.map(d => {
-    const here = placed.filter(p => p.sec.day === d);
-    return `<div class="wk-col">` + here.map(p => {
-      const t = TRACKS[DB[p.id].track];
-      const bad = here.some(q => q !== p && sectionsClash(p.sec, q.sec));
-      return `<div class="blk ${bad?'clash':''}" data-go="${p.id}" style="top:${100*(p.sec.a-DAY_START)/span}%;height:${100*(p.sec.b-p.sec.a)/span}%;background:${t.bg};border-color:${t.line};color:${t.ink}" title="${p.id} · ${DB[p.id].title} — click for detail">${p.id}</div>`;
+    const here = blocks.filter(b => b.t.day === d);
+    return `<div class="wk-col">` + here.map(b => {
+      const t = TRACKS[DB[b.id].track];
+      const bad = here.some(q => q !== b && timesClash(b.t, q.t));
+      const who = b.sec.instructor ? ` · ${esc(b.sec.instructor)}` : '';
+      const which = (SLOTS[b.id]||[]).length > 1 ? ` · section ${esc(b.sec.section)}` : '';
+      return `<div class="blk ${bad?'clash':''}" data-go="${b.id}" style="top:${100*(b.t.a-DAY_START)/span}%;height:${100*(b.t.b-b.t.a)/span}%;background:${t.bg};border-color:${t.line};color:${t.ink}" title="${b.id} · ${esc(DB[b.id].title)}${which}${who} — click for detail">${b.id}</div>`;
     }).join('') + `</div>`;
   }).join('');
   wk.innerHTML =
@@ -983,7 +1209,7 @@ function renderWeek(ids, assign){
 }
 
 function renderPlan(){
-  const ids = [...plan].filter(id => DB[id]);
+  const ids = [...plan.keys()].filter(id => DB[id]);
   const box = document.getElementById('plan');
   const status = document.getElementById('plan-status');
   const units = ids.reduce((a,id) => a + DB[id].units, 0);
@@ -1003,9 +1229,19 @@ function renderPlan(){
   box.innerHTML = ids.map(id => {
     const n = DB[id];
     const notReady = !done.has(id) && !ready(id);
+    const secs = SLOTS[id] || [];
+    const pick = plan.get(id);
+    // Only worth a chooser when there is actually a choice to make.
+    const chooser = secs.length > 1
+      ? `<select class="pick" data-pick="${id}" title="Which section are you taking?">
+           <option value=""${pick == null ? ' selected' : ''}>Any section</option>
+           ${secs.map(s => `<option value="${esc(s.section)}"${pick === s.section ? ' selected' : ''}>${esc(sectionSummary(s))}</option>`).join('')}
+         </select>`
+      : '';
     return `<div class="row ${inClash.has(id)?'bad':''}">
       <span class="code" data-go="${id}">${id}</span>
-      <span class="nm">${meetLabel(id)} · ${n.units}u</span>
+      <span class="nm">${chooser ? `${n.units}u` : `${esc(meetLabel(id))} · ${n.units}u`}</span>
+      ${chooser}
       ${notReady ? '<span class="warn-dot" title="Prerequisites not yet marked complete">&#9650;</span>' : ''}
       <button class="add in" data-drop="${id}" title="Remove from plan">&times;</button>
     </div>`;
@@ -1014,11 +1250,11 @@ function renderPlan(){
   let msg;
   if(hard.length){
     msg = `<div class="banner no"><b>Time conflict</b><ul>` +
-      hard.map(([a,b]) => `<li>${a} and ${b} — ${meetLabel(a)}</li>`).join('') + `</ul></div>`;
+      hard.map(([a,b]) => `<li>${a}${allSections(a)} and ${b}${allSections(b)} — ${esc(meetLabel(a))}</li>`).join('') + `</ul></div>`;
   } else if(!assign){
     msg = `<div class="banner no"><b>Sections can't all be reconciled</b> — every combination leaves an overlap somewhere. Drop one course.</div>`;
   } else {
-    const flex = ids.filter(id => SLOTS[id] && SLOTS[id].length > 1).length;
+    const flex = ids.filter(id => optionsFor(id).length > 1).length;
     msg = `<div class="banner ok"><b>No conflicts</b> · ${units} units` +
       (units < 8 ? ' — below the 8-unit part-time floor' :
        units < 12 ? ' — below the 12-unit full-time floor' :
@@ -1031,22 +1267,34 @@ function renderPlan(){
 
   box.querySelectorAll('[data-drop]').forEach(b =>
     b.onclick = () => togglePlan(b.getAttribute('data-drop')));
+  box.querySelectorAll('[data-pick]').forEach(sel => {
+    sel.onchange = () => chooseSection(sel.getAttribute('data-pick'), sel.value);
+    sel.onclick = e => e.stopPropagation();
+  });
   box.querySelectorAll('[data-go]').forEach(el =>
     el.onclick = () => focus(el.getAttribute('data-go')));
 }
 
 function renderCompleted(){
-  const ids = [...done].filter(id => DB[id]).sort((a,b) => a.localeCompare(b));
-  const units = ids.reduce((a,id) => a + DB[id].units, 0);
+  // Members roll up into their series, so a part-finished internship shows as
+  // one row reading "3 of 5" rather than three separate rows.
+  const plain = [...done].filter(id => DB[id] && !isMember(id));
+  const partly = Object.keys(SERIES).filter(sid => seriesDone(sid) > 0);
+  const ids = [...plain, ...partly].sort((a,b) => a.localeCompare(b));
+  const units = plain.reduce((a,id) => a + DB[id].units, 0)
+    + partly.reduce((a,sid) => a + membersOf(sid).filter(m => done.has(m))
+        .reduce((u,m) => u + DB[m].units, 0), 0);
   const box = document.getElementById('donelist');
   document.getElementById('done-count').textContent =
     ids.length ? `${ids.length} course${ids.length===1?'':'s'} · ${units}u` : '';
   box.innerHTML = ids.length
-    ? ids.map(id => `<div class="row">
+    ? ids.map(id => {
+        const p = seriesProgress(id);
+        return `<div class="row">
         <span class="code" data-go="${id}">${id}</span>
-        <span class="nm" data-go="${id}">${DB[id].title}</span>
-        <button class="add in" data-undo="${id}" title="Mark not completed">&#8634;</button>
-      </div>`).join('')
+        <span class="nm" data-go="${id}">${esc(DB[id].title)}${p ? ` · ${p}` : ''}</span>
+        <button class="add in" data-undo="${id}" title="${isSeries(id) ? 'Mark none of these completed' : 'Mark not completed'}">&#8634;</button>
+      </div>`; }).join('')
     : '<div class="empty">Nothing marked complete yet.</div>';
   box.querySelectorAll('[data-go]').forEach(el =>
     el.onclick = () => focus(el.getAttribute('data-go')));
@@ -1060,10 +1308,14 @@ function renderReady(){
   document.getElementById('ready').innerHTML = list.length
     ? list.map(({n,i}) => `<div class="row">
         <span class="code" data-go="${n.id}">${n.id}</span>
-        <span class="nm" data-go="${n.id}">${n.title}</span>
+        <span class="nm" data-go="${n.id}">${esc(n.title)}</span>
         <span class="imp" style="${impStyle(i.count, max)}" title="Unlocks ${i.count} further course${i.count===1?'':'s'} toward this goal">${i.count}</span>
-        <button class="add" data-done="${n.id}" title="Mark completed">&#10003;</button>
-        <button class="add ${plan.has(n.id)?'in':''}" data-add="${n.id}" title="${plan.has(n.id)?'Remove from plan':'Add to plan'}">${plan.has(n.id)?'&minus;':'+'}</button>
+        ${isSeries(n.id)
+          ? `<button class="add" data-go="${n.id}" title="${membersOf(n.id).length} parts — open it to choose one">&rsaquo;</button>`
+          : `<button class="add" data-done="${n.id}" title="Mark completed">&#10003;</button>
+             ${isOffered(n.id)
+               ? `<button class="add ${plan.has(n.id)?'in':''}" data-add="${n.id}" title="${plan.has(n.id)?'Remove from plan':'Add to plan'}">${plan.has(n.id)?'&minus;':'+'}</button>`
+               : `<button class="add" disabled title="Not offered ${esc(TERM.label)} — you can still mark it completed">+</button>`}`}
       </div>`).join('')
     : '<div class="empty">Nothing unlocked yet — start marking off what you\'ve finished.</div>';
   document.querySelectorAll('#ready [data-go]').forEach(el =>
@@ -1073,12 +1325,25 @@ function renderReady(){
   document.querySelectorAll('#ready [data-add]').forEach(b =>
     b.onclick = e => { e.stopPropagation(); togglePlan(b.getAttribute('data-add')); });
   document.getElementById('qi-note').textContent =
-    `Qi cultivation: ${qiUnits()} of 4 units complete — counts QC and tai chi courses you've marked off.`;
+    `${reqLabel('qi')}: ${qiUnits()} of ${QI_UNITS} units complete — counts the ${QI.length} courses named in the curriculum.`;
+}
+
+/* Everything the app knows about its own limits comes from the data files, so
+   this panel cannot drift out of date the way hand-written caveats do. */
+function renderNotes(){
+  const notes = [...(CURRICULUM.notes || []), ...(TERM.notes || [])];
+  const box = document.getElementById('data-notes');
+  box.innerHTML = notes.length
+    ? `<ul class="notes">${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>`
+    : '<p class="note">No notes recorded for this data.</p>';
+  const s = TERM.source || {};
+  document.getElementById('notes-src').textContent =
+    s.document ? `${s.document}${s.version ? `, v${s.version}` : ''}${s.dated ? `, ${s.dated}` : ''}` : '';
 }
 
 function renderLegend(){
   document.getElementById('legend').innerHTML = Object.entries(TRACKS).map(([k,t]) =>
-    `<span class="lg" style="background:${t.bg};border-color:${t.line};color:${t.ink}">${t.name}</span>`).join('');
+    `<span class="lg" style="background:${t.bg};border-color:${t.line};color:${t.ink}">${esc(t.name)}</span>`).join('');
 }
 
 function renderAll(){ renderGoals(); renderCompleted(); renderReady(); renderPlan(); renderDetail(); }
@@ -1111,16 +1376,45 @@ document.getElementById('file').onchange = e => {
 };
 document.getElementById('reset').onclick = () => {
   if(done.size + plan.size && !confirm('Clear all completed courses and your plan? Back up to a file first if you want to keep it.')) return;
-  done = new Set(); plan = new Set(); extra = {hours:false, certs:false};
+  done = new Set(); plan = new Map(); extra = {hours:false, certs:false};
   document.getElementById('req-hours').checked = false;
   document.getElementById('req-certs').checked = false;
   save(); paint(); renderAll(); focus(null);
 };
 
+/* A module script keeps its bindings to itself, which would make the render
+   checks in data/checks.js impossible to run: they need the app's own answers,
+   not a second copy of the logic. Expose exactly what those checks ask for. */
+window.APP = {
+  curriculumOf: () => CURRICULUM,
+  classesOf: () => TERM,
+  nodes: () => cy.nodes().map(n => n.id()),
+  edges: () => cy.edges().map(e => ({ source:e.source().id(), target:e.target().id() })),
+  reachable: id => cy.$id(id).predecessors('node').map(n => n.id()),
+  relations: id => {
+    const n = DB[id];
+    return [...new Set([...n.pre, ...n.co, ...n.anyOf.flat()])].filter(x => DB[x]);
+  },
+  ready: id => ready(id),
+  done: () => [...done],
+  plan: () => [...plan.entries()],
+  satisfied, isSeries, isMember, seriesOf, membersOf, seriesDone, seriesComplete,
+  toggleDone, togglePlan,
+  meetLabel, isOffered, DB, SERIES, SLOTS, TRACKS, GOALS, QI, QI_UNITS
+};
+
+// The term the data describes, stated in the UI so a stale copy is obvious.
+document.getElementById('term-label').textContent =
+  `Yo San University · ${TERM.label} schedule · MAcCHM & DAcCHM`;
+document.title = `Yo San — prerequisite explorer, ${TERM.label}`;
+
 load();
 document.getElementById('req-hours').checked = extra.hours;
 document.getElementById('req-certs').checked = extra.certs;
+document.getElementById('lbl-hours').textContent = reqLabel('hours');
+document.getElementById('lbl-certs').textContent = reqLabel('certs');
 renderLegend();
+renderNotes();
 applyGoal();
 paint();
 renderAll();

@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "term": "2026-fall",
+  "label": "Fall 2026",
+  "_comment": "Open classes: what runs this term, and when. One entry per section. Delivery mode follows the schedule's own legend: everything is in person on campus except rows marked with the laptop glyph, which are delivered via Zoom. Exams and the two herb labs have no instructor listed on the schedule.",
+  "source": {
+    "document": "Fall 2026 Course Schedule",
+    "version": 2,
+    "dated": "2026-07-24",
+    "publisher": "yosan.edu"
+  },
+
+  "notes": [
+    "Five sections have no instructor printed on the schedule: the two herb labs, which say only to reserve times after registration, and the three benchmark exams.",
+    "Several courses run for part of the term only — HM100 in weeks 1-8, WM431 from 3 September to 8 October, and others. Those dates are not modelled, so two courses at the same hour in different weeks are reported as clashing when they are not.",
+    "Delivery mode follows the schedule's legend: everything is in person on campus except rows marked as delivered via Zoom."
+  ],
+
+  "classes": {
+    "CM111": [{ "section": "1", "meetings": [{ "day": "Th", "start": "9a", "end": "12p" }], "instructor": "Qian", "mode": "in-person" }],
+    "CM112": [{ "section": "1", "meetings": [{ "day": "M", "start": "9a", "end": "12p" }], "instructor": "Kassim", "mode": "in-person" }],
+    "CM113": [{ "section": "1", "meetings": [{ "day": "Tu", "start": "9a", "end": "11a" }], "instructor": "Schrier", "mode": "online" }],
+    "CM201": [{ "section": "1", "meetings": [{ "day": "W", "start": "6p", "end": "9p" }], "instructor": "Qian", "mode": "in-person" }],
+    "CM202": [{ "section": "1", "meetings": [{ "day": "Tu", "start": "5p", "end": "8p" }], "instructor": "Qiao", "mode": "in-person" }],
+    "CM301": [{ "section": "1", "meetings": [{ "day": "Th", "start": "1p", "end": "4p" }], "instructor": "Qian", "mode": "in-person" }],
+    "CM302": [{ "section": "1", "meetings": [{ "day": "M", "start": "2p", "end": "5p" }], "instructor": "M. Li", "mode": "in-person" }],
+    "CM400": [{ "section": "1", "meetings": [{ "day": "W", "start": "12p", "end": "3p" }], "instructor": "Westhauser", "mode": "online" }],
+    "CM411": [{ "section": "1", "meetings": [{ "day": "Th", "start": "2p", "end": "5p" }], "instructor": "M. Li", "mode": "in-person" }],
+    "CM420": [{ "section": "1", "meetings": [{ "day": "M", "start": "2p", "end": "5p" }], "instructor": "D. Ni", "mode": "in-person" }],
+    "CM421": [{ "section": "1", "meetings": [{ "day": "Th", "start": "9a", "end": "12p" }], "instructor": "Y. Li", "mode": "in-person" }],
+
+    "HM100": [{ "section": "1", "meetings": [{ "day": "Th", "start": "1p", "end": "3p" }], "instructor": "Chambers", "mode": "in-person" }],
+    "HM101": [{ "section": "1", "meetings": [{ "day": "W", "start": "10a", "end": "12p" }], "instructor": "Berletich", "mode": "online" }],
+    "HM110": [{ "section": "1", "meetings": [{ "day": "Tu", "start": "1p", "end": "4p" }], "instructor": "Chambers", "mode": "in-person" }],
+    "HM120": [{ "section": "1", "meetings": [{ "day": "M", "start": "6p", "end": "9p" }], "instructor": "Wang", "mode": "in-person" }],
+    "HM130": [
+      { "section": "1", "meetings": [{ "day": "Tu", "start": "5p", "end": "8p" }], "instructor": "Wallace", "mode": "online" },
+      { "section": "2", "meetings": [{ "day": "W", "start": "1p", "end": "4p" }], "instructor": "Berletich", "mode": "online" }
+    ],
+    "HM111": [{ "section": "1", "meetings": [], "instructor": null, "mode": "in-person" }],
+    "HM121": [{ "section": "1", "meetings": [], "instructor": null, "mode": "in-person" }],
+    "HM210": [
+      { "section": "1", "meetings": [{ "day": "W", "start": "5p", "end": "8p" }], "instructor": "Berletich", "mode": "online" },
+      { "section": "2", "meetings": [{ "day": "Tu", "start": "1p", "end": "4p" }], "instructor": "Wren", "mode": "online" }
+    ],
+    "HM220": [{ "section": "1", "meetings": [{ "day": "W", "start": "9a", "end": "12p" }], "instructor": "Chang", "mode": "in-person" }],
+    "HM230": [{ "section": "1", "meetings": [{ "day": "Th", "start": "9a", "end": "12p" }], "instructor": "Wen", "mode": "in-person" }],
+    "HM240": [{ "section": "1", "meetings": [{ "day": "Tu", "start": "9a", "end": "12p" }], "instructor": "Chang", "mode": "in-person" }],
+    "HM310": [{ "section": "1", "meetings": [{ "day": "W", "start": "10a", "end": "12p" }], "instructor": "Hu", "mode": "in-person" }],
+    "HM320": [{ "section": "1", "meetings": [{ "day": "M", "start": "9a", "end": "12p" }], "instructor": "Chang", "mode": "in-person" }],
+
+    "AC100": [{ "section": "1", "meetings": [{ "day": "M", "start": "10a", "end": "12p" }], "instructor": "Wren", "mode": "in-person" }],
+    "AC201": [
+      { "section": "1", "meetings": [{ "day": "M", "start": "3p", "end": "6p" }], "instructor": "Deng", "mode": "in-person" },
+      { "section": "2", "meetings": [{ "day": "Th", "start": "9a", "end": "12p" }], "instructor": "Garcia", "mode": "in-person" }
+    ],
+    "AC202": [{ "section": "1", "meetings": [{ "day": "Th", "start": "12p", "end": "3p" }], "instructor": "Deng", "mode": "in-person" }],
+    "AC203": [{ "section": "1", "meetings": [{ "day": "Th", "start": "1p", "end": "4p" }], "instructor": "Garcia", "mode": "in-person" }],
+    "AC220": [{ "section": "1", "meetings": [{ "day": "W", "start": "1p", "end": "4p" }], "instructor": "DeStefano", "mode": "in-person" }],
+    "AC301": [
+      { "section": "1", "meetings": [{ "day": "M", "start": "9a", "end": "12p" }], "instructor": "Zheng", "mode": "in-person" },
+      { "section": "2", "meetings": [{ "day": "M", "start": "12p", "end": "3p" }], "instructor": "Deng", "mode": "in-person" }
+    ],
+    "AC302": [{ "section": "1", "meetings": [{ "day": "M", "start": "1p", "end": "4p" }], "instructor": "Zheng", "mode": "in-person" }],
+    "AC310": [{ "section": "1", "meetings": [{ "day": "Th", "start": "3p", "end": "5p" }], "instructor": "Deng", "mode": "in-person" }],
+    "AC320": [{ "section": "1", "meetings": [{ "day": "W", "start": "5p", "end": "8p" }], "instructor": "Wilcox", "mode": "in-person" }],
+
+    "WM110": [{ "section": "1", "meetings": [{ "day": "Tu", "start": "2p", "end": "4p" }], "instructor": "Plymale-Mallory", "mode": "in-person" }],
+    "WM120": [{ "section": "1", "meetings": [{ "day": "M", "start": "1p", "end": "3p" }], "instructor": "Namin", "mode": "online" }],
+    "WM130": [{ "section": "1", "meetings": [{ "day": "M", "start": "1p", "end": "3p" }], "instructor": "Yeganeh", "mode": "online" }],
+    "WM140": [{ "section": "1", "meetings": [{ "day": "Tu", "start": "6p", "end": "8p" }], "instructor": "Benjamin", "mode": "online" }],
+    "WM151": [{ "section": "1", "meetings": [{ "day": "Tu", "start": "5p", "end": "8p" }], "instructor": "Carter", "mode": "online" }],
+    "WM152": [{ "section": "1", "meetings": [{ "day": "M", "start": "6p", "end": "9p" }], "instructor": "Qamar-Busler", "mode": "online" }],
+    "WM153": [{ "section": "1", "meetings": [{ "day": "W", "start": "9a", "end": "12p" }], "instructor": "DeStefano", "mode": "in-person" }],
+    "WM160": [{ "section": "1", "meetings": [{ "day": "Tu", "start": "9a", "end": "11a" }], "instructor": "Baqai", "mode": "online" }],
+    "WM211": [{ "section": "1", "meetings": [{ "day": "Th", "start": "5p", "end": "8p" }], "instructor": "Finney", "mode": "online" }],
+    "WM212": [{ "section": "1", "meetings": [{ "day": "Tu", "start": "1p", "end": "4p" }], "instructor": "Lee", "mode": "in-person" }],
+    "WM220": [
+      { "section": "1", "meetings": [{ "day": "W", "start": "6p", "end": "9p" }], "instructor": "Qamar-Busler", "mode": "online" },
+      { "section": "2", "meetings": [{ "day": "M", "start": "8a", "end": "11a" }], "instructor": "Akopyan", "mode": "online" }
+    ],
+    "WM230": [{ "section": "1", "meetings": [{ "day": "Tu", "start": "11a", "end": "1p" }], "instructor": "Schrier", "mode": "online" }],
+    "WM310": [{ "section": "1", "meetings": [{ "day": "Tu", "start": "9a", "end": "12p" }], "instructor": "Lee", "mode": "in-person" }],
+    "WM321": [{ "section": "1", "meetings": [{ "day": "W", "start": "1p", "end": "4p" }], "instructor": "Namin", "mode": "online" }],
+    "WM322": [{ "section": "1", "meetings": [{ "day": "M", "start": "5p", "end": "8p" }], "instructor": "Namin", "mode": "online" }],
+    "WM330": [{ "section": "1", "meetings": [{ "day": "W", "start": "4:30p", "end": "6:30p" }], "instructor": "Namin / Ryan", "mode": "online" }],
+    "WM340": [{ "section": "1", "meetings": [{ "day": "Tu", "start": "5p", "end": "7p" }], "instructor": "Berletich", "mode": "online" }],
+    "WM361": [{ "section": "1", "meetings": [{ "day": "Tu", "start": "9a", "end": "12p" }], "instructor": "Namin", "mode": "online" }],
+    "WM370": [{ "section": "1", "meetings": [{ "day": "W", "start": "9a", "end": "11a" }], "instructor": "Oleribe", "mode": "online" }],
+    "WM420": [{ "section": "1", "meetings": [{ "day": "Tu", "start": "12p", "end": "2p" }], "instructor": "Oleribe", "mode": "online" }],
+    "WM431": [{ "section": "1", "meetings": [{ "day": "Th", "start": "5p", "end": "8p" }], "instructor": "Gustafson", "mode": "online" }],
+    "WM432": [{ "section": "1", "meetings": [{ "day": "M", "start": "6p", "end": "8p" }], "instructor": "Smith", "mode": "online" }],
+
+    "CL100": [{ "section": "1", "meetings": [{ "day": "W", "start": "1p", "end": "4p" }], "instructor": "Luca & Team", "mode": "online" }],
+    "CL310A": [{ "section": "1", "meetings": [{ "day": "M", "start": "1p", "end": "4p" }], "instructor": "Chang", "mode": "in-person" }],
+    "CL310B": [{ "section": "1", "meetings": [{ "day": "Tu", "start": "9a", "end": "12p" }], "instructor": "Plymale-Mallory", "mode": "in-person" }],
+
+    "CL400A": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL400B": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL400C": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+
+    "CL600A": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL600B": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL600C": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL600D": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL600E": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+
+    "CL700A": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL700B": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL700C": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL700D": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+
+    "CL800A": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL800B": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL800C": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL800D": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL880": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL611": [{ "section": "1", "meetings": [{ "day": "W", "start": "10a", "end": "12p" }], "instructor": "Berletich", "mode": "online" }],
+    "CL711": [{ "section": "1", "meetings": [{ "day": "Tu", "start": "9a", "end": "12p" }], "instructor": "Lin", "mode": "online" }],
+    "CL811": [{ "section": "1", "meetings": [{ "day": "M", "start": "12p", "end": "3p" }], "instructor": "Westhauser", "mode": "online" }],
+
+    "TO100": [{ "section": "1", "meetings": [{ "day": "M", "start": "9a", "end": "10a" }], "instructor": "Sullivan", "mode": "in-person" }],
+    "TO200": [{ "section": "1", "meetings": [{ "day": "Th", "start": "9a", "end": "10a" }], "instructor": "Schrier", "mode": "online" }],
+    "TO300": [{ "section": "1", "meetings": [{ "day": "M", "start": "9a", "end": "10a" }], "instructor": "Langer-Osuna", "mode": "online" }],
+    "QC110": [{ "section": "1", "meetings": [{ "day": "M", "start": "11a", "end": "12p" }], "instructor": "Sullivan", "mode": "in-person" }],
+    "QC120": [{ "section": "1", "meetings": [{ "day": "Th", "start": "11a", "end": "12p" }], "instructor": "Ward", "mode": "online" }],
+    "QC140": [{ "section": "1", "meetings": [{ "day": "M", "start": "10a", "end": "11a" }], "instructor": "Sullivan", "mode": "in-person" }],
+    "QC252": [{ "section": "1", "meetings": [{ "day": "Tu", "start": "9a", "end": "10:30a" }], "instructor": "M. Ni", "mode": "online" }],
+    "EL346": [{ "section": "1", "meetings": [{ "day": "Th", "start": "6p", "end": "7p" }], "instructor": "M. Li", "mode": "in-person" }],
+    "EL357": [{ "section": "1", "meetings": [{ "day": "W", "start": "12p", "end": "1p" }], "instructor": "Hu", "mode": "in-person" }],
+
+    "EX100": [{ "section": "1", "meetings": [], "instructor": null, "mode": "in-person" }],
+    "EX210": [{ "section": "1", "meetings": [], "instructor": null, "mode": "in-person" }],
+    "EX300": [{ "section": "1", "meetings": [], "instructor": null, "mode": "in-person" }],
+
+    "PD340": [{ "section": "1", "meetings": [{ "day": "F", "start": "1p", "end": "4p" }], "instructor": "Oleribe", "mode": "online" }],
+    "PD350": [{ "section": "1", "meetings": [{ "day": "Sa", "start": "8a", "end": "4:30p" }], "instructor": "D. Ni", "mode": "online" }],
+    "PD410": [{ "section": "1", "meetings": [{ "day": "Sa", "start": "8a", "end": "4:30p" }], "instructor": "Adcock", "mode": "online" }],
+    "PD450": [{ "section": "1", "meetings": [{ "day": "F", "start": "9a", "end": "12p" }], "instructor": "Ross-Griggs", "mode": "online" }]
+  }
+}
