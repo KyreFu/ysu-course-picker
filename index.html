@@ -156,6 +156,9 @@
   .legend{display:flex;flex-wrap:wrap;gap:5px}
   .lg{font-size:11px;padding:2px 7px;border-radius:4px;border:1px solid}
   .note{font-size:12px;color:var(--ink-3);line-height:1.5}
+  .notes{font-size:12px;color:var(--ink-3);line-height:1.5;margin:0;padding-left:15px}
+  .notes li{margin-bottom:6px}
+  .notes li:last-child{margin-bottom:0}
   .tick{color:var(--accent);font-weight:600}
   .cross{color:var(--ink-3)}
   @media (max-width:900px){
@@ -250,11 +253,9 @@
       </p>
     </div>
     <div class="sec">
-      <h2>Caveats</h2>
-      <p class="note">
-        EX210 and EX220 are merged into one node — same prerequisites, taken the same term.
-        CM201 also lists CM100 Chinese Medical Terminology, not offered this term and not graphed.
-        EX300 accepts WM360 or WM361; only WM361 runs in Fall 2026.
+      <h2>About this data <span id="notes-src" class="tally"></span></h2>
+      <div id="data-notes"></div>
+      <p class="note" style="margin-top:9px">
         Prerequisites can only be waived by approved Override Petition — check with the registrar before relying on this.
       </p>
     </div>
@@ -1297,6 +1298,19 @@ function renderReady(){
     `Qi cultivation: ${qiUnits()} of 4 units complete — counts QC and tai chi courses you've marked off.`;
 }
 
+/* Everything the app knows about its own limits comes from the data files, so
+   this panel cannot drift out of date the way hand-written caveats do. */
+function renderNotes(){
+  const notes = [...(CURRICULUM.notes || []), ...(TERM.notes || [])];
+  const box = document.getElementById('data-notes');
+  box.innerHTML = notes.length
+    ? `<ul class="notes">${notes.map(n => `<li>${n}</li>`).join('')}</ul>`
+    : '<p class="note">No notes recorded for this data.</p>';
+  const s = TERM.source || {};
+  document.getElementById('notes-src').textContent =
+    s.document ? `${s.document}${s.version ? `, v${s.version}` : ''}${s.dated ? `, ${s.dated}` : ''}` : '';
+}
+
 function renderLegend(){
   document.getElementById('legend').innerHTML = Object.entries(TRACKS).map(([k,t]) =>
     `<span class="lg" style="background:${t.bg};border-color:${t.line};color:${t.ink}">${t.name}</span>`).join('');
@@ -1368,6 +1382,7 @@ load();
 document.getElementById('req-hours').checked = extra.hours;
 document.getElementById('req-certs').checked = extra.certs;
 renderLegend();
+renderNotes();
 applyGoal();
 paint();
 renderAll();

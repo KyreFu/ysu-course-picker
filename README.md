@@ -157,6 +157,14 @@ CL600 requires twelve things. Eight of them are already required by the Pre-Clin
 
 Nothing is hidden by this. **Needs** in the detail panel lists every requirement, direct or not, and readiness is computed from the full list — so a course never becomes takeable because an arrow wasn't drawn. Corequisites and "one of" groups are never reduced: neither guarantees a specific course was completed, so neither can stand in for one.
 
+## What the tool tells you about its own data
+
+The right panel ends with **About this data**, headed by the exact document the figures come from — *Fall 2026 Course Schedule, v2, 2026-07-24*. Under it is every modelling decision and every known disagreement between sources, in plain language: which entries are merged, where the sources contradict each other, and what isn't modelled at all.
+
+These notes live in the data, not in the page. `curriculum.json` carries a `notes` array for things true of the programme, and each class file carries one for things true of that term. Whoever updates the data owns what the tool admits to.
+
+The point is that a student who notices something odd can tell whether it's a bug or a known limit without asking anyone. Resolving the underlying discrepancies is the registrar's business, not this tool's — so the tool states them rather than guessing.
+
 ## Where the data comes from
 
 Fall 2026 Course Schedule, version 2, dated 24 July 2026, published at yosan.edu. Course numbers, titles, units, meeting times and instructor come from page 1; the lettered prerequisite key from page 2. The citation travels with the data, in the `source` block of the class file.

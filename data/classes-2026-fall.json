@@ -10,6 +10,12 @@
     "publisher": "yosan.edu"
   },
 
+  "notes": [
+    "Five sections have no instructor printed on the schedule: the two herb labs, which say only to reserve times after registration, and the three benchmark exams.",
+    "Several courses run for part of the term only — HM100 in weeks 1-8, WM431 from 3 September to 8 October, and others. Those dates are not modelled, so two courses at the same hour in different weeks are reported as clashing when they are not.",
+    "Delivery mode follows the schedule's legend: everything is in person on campus except rows marked as delivered via Zoom."
+  ],
+
   "classes": {
     "CM111": [{ "section": "1", "meetings": [{ "day": "Th", "start": "9a", "end": "12p" }], "instructor": "Qian", "mode": "in-person" }],
     "CM112": [{ "section": "1", "meetings": [{ "day": "M", "start": "9a", "end": "12p" }], "instructor": "Kassim", "mode": "in-person" }],

@@ -19,6 +19,16 @@
     "qi": { "label": "4 units of qi cultivation", "kind": "units", "units": 4, "countsToward": ["QC110", "QC120", "QC140", "QC252", "EL346", "EL357"] }
   },
 
+  "_notesNote": "Shown to students in the 'About this data' panel. Say what the model does and where the sources disagree, so nobody has to guess whether something is a bug.",
+
+  "notes": [
+    "EX210 and EX220 appear as one entry: same prerequisites, taken the same term, units combined.",
+    "The Graduation Exam accepts WM360 or WM361. WM360 is named in the schedule's prerequisite key but appears nowhere in the university's curriculum listing, so only WM361 is modelled. If you took WM360, mark WM361 complete.",
+    "Where a requirement offers a choice — 'one of CL310 or CL400' — the goal totals count every option, so units and course counts read a little high.",
+    "QC130 and QC150 are in the curriculum but are not counted toward the 4-unit qi cultivation requirement. The schedule's foundation list names six other courses, and it is not settled whether these count as well.",
+    "The university's advising tool lists more courses for the Comprehensive and Pre-clinical exams than the schedule's prerequisite key does. These figures follow the key, which is the source cited below."
+  ],
+
   "goals": [
     { "id": "ALL", "name": "Whole program", "sub": "Everything in the curriculum, offered this term or not" },
     { "id": "EX100", "name": "First Comprehensive", "sub": "End of the foundational sequence" },
