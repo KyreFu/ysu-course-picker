@@ -327,13 +327,62 @@ Object.entries(CURRICULUM.courses).forEach(([code, c]) => DB[code] = {
   pre:c.pre||[], co:c.co||[], anyOf:c.anyOf||[], flags:c.flags||[]
 });
 
+/* A series is a course taken several times, each enrolment a separate course
+   with its own units. Membership is declared in curriculum.json and never
+   inferred from a code: CL600A-E carry a letter, QC130/QC131 do not, and a
+   -1/-2 in a term schedule means another opening rather than a series member.
+
+   Everything outside this block treats a series id as if it were a course:
+   it has prerequisites, it appears once on the graph, and other courses
+   require it. What differs is that it is satisfied only when all of its
+   required members are complete. */
+// Series records join DB as if they were courses, so the graph, the lists and
+// the readiness logic can treat them the same way. Their units are the sum of
+// their members'.
+function addSeriesToDB(){
+  Object.entries(SERIES).forEach(([sid, s]) => DB[sid] = {
+    id:sid, title:s.title, units:seriesUnits(sid), track:s.track,
+    pre:s.pre||[], co:s.co||[], anyOf:s.anyOf||[], flags:s.flags||[],
+    isSeries:true
+  });
+}
+
+const SERIES = CURRICULUM.series || {};
+const SERIES_OF = {};                       // member id -> series id
+Object.entries(SERIES).forEach(([sid, s]) =>
+  (s.members || []).forEach(m => SERIES_OF[m] = sid));
+
+const isSeries = id => Object.prototype.hasOwnProperty.call(SERIES, id);
+const seriesOf = id => SERIES_OF[id] || null;
+const membersOf = sid => (SERIES[sid] || {}).members || [];
+const isMember = id => !!SERIES_OF[id];
+
+// How many of a series are finished, and whether that is enough.
+function seriesDone(sid){
+  return membersOf(sid).filter(m => done.has(m)).length;
+}
+function seriesComplete(sid){
+  return seriesDone(sid) >= (SERIES[sid].required || membersOf(sid).length);
+}
+function seriesUnits(sid){
+  return membersOf(sid).reduce((a, m) => a + ((DB[m] && DB[m].units) || 0), 0);
+}
+
+addSeriesToDB();
+
 const GOALS = CURRICULUM.goals;
 const QI = ((CURRICULUM.requirements||{}).qi||{}).countsToward || [];
 const QI_UNITS = ((CURRICULUM.requirements||{}).qi||{}).units || 4;
 
 // Which courses actually run this term, and their sections.
 const SECTIONS = TERM.classes || {};
-const isOffered = id => Object.prototype.hasOwnProperty.call(SECTIONS, id);
+const hasClasses = id => Object.prototype.hasOwnProperty.call(SECTIONS, id);
+// The class file is keyed by member, so a series runs if any part of it does.
+const isOffered = id => isSeries(id) ? membersOf(id).some(hasClasses) : hasClasses(id);
+
+// What the graph and the course list show: series stand in for their members,
+// so a five-part internship is one node and one row, not five.
+const shown = id => !isMember(id);
 
 
 function mins(t){
@@ -384,7 +433,35 @@ function modeLabel(m){
 
 // Sections are listed rather than packed into one line, because instructor and
 // delivery mode belong to a section, not to a course.
+/* A series lists its parts, each with its own sections, instructor and mode.
+   This is where you choose which one you are taking — the series itself is
+   never marked complete or planned directly. */
+function seriesBlock(sid){
+  const req = SERIES[sid].required || membersOf(sid).length;
+  const have = seriesDone(sid);
+  return `<h2 style="margin-top:16px">Parts (${have} of ${req} complete)</h2>
+    <div class="list">${membersOf(sid).map(m => {
+      const runs = hasClasses(m);
+      const when = runs ? (SECTIONS[m]||[]).map(s => {
+        const bits = [sectionTime(s)];
+        if(s.instructor) bits.push(s.instructor);
+        if(modeLabel(s.mode)) bits.push(modeLabel(s.mode));
+        return bits.join(' · ');
+      }).join(' | ') : `not offered ${TERM.label}`;
+      return `<div class="row">
+        <span class="code">${statusMark(m)} ${m}</span>
+        <span class="nm">${when}</span>
+        <button class="add ${done.has(m)?'in':''}" data-done="${m}" title="${done.has(m)?'Mark not completed':'Mark completed'}">&#10003;</button>
+        ${runs && !done.has(m)
+          ? `<button class="add ${plan.has(m)?'in':''}" data-add="${m}" title="${plan.has(m)?'Remove from plan':'Add this part to plan'}">${plan.has(m)?'&minus;':'+'}</button>`
+          : ''}
+      </div>`;
+    }).join('')}</div>
+    <p class="note" style="margin:7px 0 0">All ${req} parts are required. Anything that needs ${sid} unlocks only when every part is complete.</p>`;
+}
+
 function sectionsBlock(id){
+  if(isSeries(id)) return seriesBlock(id);
   if(!isOffered(id))
     return `<h2 style="margin-top:16px">Sections</h2>
       <div class="empty">Not offered ${TERM.label}. It stays on the graph so chains that pass through it stay readable.</div>`;
@@ -553,11 +630,20 @@ function flagOk(f){
   if(f === 'qi') return qiUnits() >= QI_UNITS;
   return !!extra[f];
 }
+/* "Finished" for a plain course means it is marked done. For a series it means
+   enough of its members are done — a series id is never itself in `done`.
+   Everything that asks whether a requirement is met goes through here. */
+function satisfied(id){
+  return isSeries(id) ? seriesComplete(id) : done.has(id);
+}
+
 function ready(id){
+  // A member inherits its series' prerequisites; it has none of its own.
+  if(isMember(id)) return ready(seriesOf(id));
   const n = DB[id];
   if(!n) return false;
-  if(!n.pre.every(p => done.has(p))) return false;
-  if(!n.anyOf.every(g => g.some(p => done.has(p)))) return false;
+  if(!n.pre.every(satisfied)) return false;
+  if(!n.anyOf.every(g => g.some(satisfied))) return false;
   if(!n.flags.every(flagOk)) return false;
   return true;
 }
@@ -623,10 +709,13 @@ function impact(id, s){
 }
 
 const els = [];
-Object.values(DB).forEach(n => els.push({
-  data:{ id:n.id, track:n.track, offered: isOffered(n.id) ? 1 : 0,
-         label:`${n.id}\n${n.title}\n${isOffered(n.id) ? `${n.units} unit${n.units>1?'s':''}` : 'not this term'}` }}));
-Object.values(DB).forEach(n => {
+Object.values(DB).filter(n => shown(n.id)).forEach(n => {
+  const parts = isSeries(n.id) ? membersOf(n.id).length : 0;
+  const size = parts ? `${parts} × ${DB[membersOf(n.id)[0]].units} units` : `${n.units} unit${n.units>1?'s':''}`;
+  els.push({ data:{ id:n.id, track:n.track, offered: isOffered(n.id) ? 1 : 0,
+    label:`${n.id}\n${n.title}\n${isOffered(n.id) ? size : 'not this term'}` }});
+});
+Object.values(DB).filter(n => shown(n.id)).forEach(n => {
   directPre(n).forEach(p => DB[p] && els.push({data:{id:`${p}->${n.id}`, source:p, target:n.id, kind:'hard'}}));
   n.co.forEach(p => DB[p] && els.push({data:{id:`${p}~>${n.id}`, source:p, target:n.id, kind:'co'}}));
   n.anyOf.forEach(g => g.forEach(p => DB[p] && els.push({data:{id:`${p}?>${n.id}`, source:p, target:n.id, kind:'co'}})));
@@ -759,18 +848,24 @@ function focus(id){
 }
 
 function statusMark(id){
-  return done.has(id) ? '<span class="tick">✓</span>' : '<span class="cross">○</span>';
+  return satisfied(id) ? '<span class="tick">✓</span>' : '<span class="cross">○</span>';
+}
+// "3 of 5" for a part-finished series, blank for anything else.
+function seriesProgress(id){
+  if(!isSeries(id)) return '';
+  const n = seriesDone(id), req = SERIES[id].required || membersOf(id).length;
+  return n && n < req ? `${n} of ${req}` : '';
 }
 
 function browseMark(id){
-  if(done.has(id)) return '<span class="tick">✓</span>';
+  if(satisfied(id)) return '<span class="tick">✓</span>';
   return ready(id) ? '<span class="tick">○</span>' : '<span class="cross">○</span>';
 }
 
 // Courses the current goal requires, narrowed by the search box. Searching is
 // scoped to the goal on purpose: anything outside it has no node to focus.
 function matches(){
-  const ids = [...scope()].filter(id => DB[id]).filter(id => {
+  const ids = [...scope()].filter(id => DB[id] && shown(id)).filter(id => {
     if(!query) return true;
     const n = DB[id];
     return id.toLowerCase().includes(query)
@@ -833,14 +928,14 @@ function renderDetail(){
       : !isOffered(n.id) ? `<span class="pill" style="background:#f2f3f1;border-color:#cdd1cd;color:#5c6a68">not offered ${TERM.label}</span>`
       : ready(n.id) ? '<span class="pill" style="background:#e1f5ee;border-color:#0f6e56;color:#04342C">ready to take</span>'
       : '<span class="pill" style="background:#faeeda;border-color:#BA7517;color:#412402">blocked</span>'}
-    <div style="margin:12px 0;display:flex;gap:7px">
+    ${isSeries(n.id) ? '' : `<div style="margin:12px 0;display:flex;gap:7px">
       <button class="btn ${done.has(n.id)?'off':''}" id="toggle">
         ${done.has(n.id) ? 'Mark not completed' : 'Mark completed'}
       </button>
       ${isOffered(n.id) ? `<button class="btn off" id="plan-btn">
         ${plan.has(n.id) ? 'Remove from plan' : 'Add to plan'}
       </button>` : ''}
-    </div>
+    </div>`}
     ${sectionsBlock(n.id)}
     <h2 style="margin-top:16px">Needs (${reqRows.length + flagRows.length})</h2>
     <div class="list">${
@@ -865,6 +960,11 @@ function renderDetail(){
   if(btn) btn.onclick = () => toggleDone(n.id);
   const pb = document.getElementById('plan-btn');
   if(pb) pb.onclick = () => togglePlan(n.id);
+  // Per-part buttons inside a series listing.
+  box.querySelectorAll('[data-done]').forEach(b =>
+    b.onclick = e => { e.stopPropagation(); toggleDone(b.getAttribute('data-done')); });
+  box.querySelectorAll('[data-add]').forEach(b =>
+    b.onclick = e => { e.stopPropagation(); togglePlan(b.getAttribute('data-add')); });
   box.querySelectorAll('[data-go]').forEach(el => {
     const id = el.getAttribute('data-go');
     if(id) el.onclick = () => focus(id);
@@ -900,7 +1000,7 @@ function renderGoals(){
 function rankedReady(){
   const s = scope();
   return Object.values(DB)
-    .filter(n => s.has(n.id) && !done.has(n.id) && ready(n.id) && isOffered(n.id))
+    .filter(n => shown(n.id) && s.has(n.id) && !satisfied(n.id) && ready(n.id) && isOffered(n.id))
     .map(n => ({ n, i:impact(n.id, s) }))
     .sort((a,b) =>
       b.i.count - a.i.count ||
@@ -937,8 +1037,14 @@ function clashPairs(ids){
 }
 
 function toggleDone(id){
-  done.has(id) ? done.delete(id) : done.add(id);
-  if(done.has(id)) plan.delete(id);
+  if(isSeries(id)){
+    // A series is finished one part at a time, so there is no single click that
+    // completes it. Undoing it clears every part.
+    membersOf(id).forEach(m => { done.delete(m); plan.delete(m); });
+  } else {
+    done.has(id) ? done.delete(id) : done.add(id);
+    if(done.has(id)) plan.delete(id);
+  }
   save(); paint(); renderAll();
 }
 
@@ -1029,17 +1135,25 @@ function renderPlan(){
 }
 
 function renderCompleted(){
-  const ids = [...done].filter(id => DB[id]).sort((a,b) => a.localeCompare(b));
-  const units = ids.reduce((a,id) => a + DB[id].units, 0);
+  // Members roll up into their series, so a part-finished internship shows as
+  // one row reading "3 of 5" rather than three separate rows.
+  const plain = [...done].filter(id => DB[id] && !isMember(id));
+  const partly = Object.keys(SERIES).filter(sid => seriesDone(sid) > 0);
+  const ids = [...plain, ...partly].sort((a,b) => a.localeCompare(b));
+  const units = plain.reduce((a,id) => a + DB[id].units, 0)
+    + partly.reduce((a,sid) => a + membersOf(sid).filter(m => done.has(m))
+        .reduce((u,m) => u + DB[m].units, 0), 0);
   const box = document.getElementById('donelist');
   document.getElementById('done-count').textContent =
     ids.length ? `${ids.length} course${ids.length===1?'':'s'} · ${units}u` : '';
   box.innerHTML = ids.length
-    ? ids.map(id => `<div class="row">
+    ? ids.map(id => {
+        const p = seriesProgress(id);
+        return `<div class="row">
         <span class="code" data-go="${id}">${id}</span>
-        <span class="nm" data-go="${id}">${DB[id].title}</span>
-        <button class="add in" data-undo="${id}" title="Mark not completed">&#8634;</button>
-      </div>`).join('')
+        <span class="nm" data-go="${id}">${DB[id].title}${p ? ` · ${p}` : ''}</span>
+        <button class="add in" data-undo="${id}" title="${isSeries(id) ? 'Mark none of these completed' : 'Mark not completed'}">&#8634;</button>
+      </div>`; }).join('')
     : '<div class="empty">Nothing marked complete yet.</div>';
   box.querySelectorAll('[data-go]').forEach(el =>
     el.onclick = () => focus(el.getAttribute('data-go')));
@@ -1055,8 +1169,10 @@ function renderReady(){
         <span class="code" data-go="${n.id}">${n.id}</span>
         <span class="nm" data-go="${n.id}">${n.title}</span>
         <span class="imp" style="${impStyle(i.count, max)}" title="Unlocks ${i.count} further course${i.count===1?'':'s'} toward this goal">${i.count}</span>
-        <button class="add" data-done="${n.id}" title="Mark completed">&#10003;</button>
-        <button class="add ${plan.has(n.id)?'in':''}" data-add="${n.id}" title="${plan.has(n.id)?'Remove from plan':'Add to plan'}">${plan.has(n.id)?'&minus;':'+'}</button>
+        ${isSeries(n.id)
+          ? `<button class="add" data-go="${n.id}" title="${membersOf(n.id).length} parts — open it to choose one">&rsaquo;</button>`
+          : `<button class="add" data-done="${n.id}" title="Mark completed">&#10003;</button>
+             <button class="add ${plan.has(n.id)?'in':''}" data-add="${n.id}" title="${plan.has(n.id)?'Remove from plan':'Add to plan'}">${plan.has(n.id)?'&minus;':'+'}</button>`}
       </div>`).join('')
     : '<div class="empty">Nothing unlocked yet — start marking off what you\'ve finished.</div>';
   document.querySelectorAll('#ready [data-go]').forEach(el =>
@@ -1125,7 +1241,10 @@ window.APP = {
   },
   ready: id => ready(id),
   done: () => [...done],
-  meetLabel, isOffered, DB, SLOTS, TRACKS, GOALS, QI, QI_UNITS
+  plan: () => [...plan],
+  satisfied, isSeries, isMember, seriesOf, membersOf, seriesDone, seriesComplete,
+  toggleDone, togglePlan,
+  meetLabel, isOffered, DB, SERIES, SLOTS, TRACKS, GOALS, QI, QI_UNITS
 };
 
 // The term the data describes, stated in the UI so a stale copy is obvious.

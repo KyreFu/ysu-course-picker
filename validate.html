@@ -75,10 +75,21 @@ try {
 
   // Render checks: build the graph exactly as index.html does, then ask
   // whether every relation survives as a direct edge or a path.
+  // Mirror what index.html builds: series stand in for their members, so a
+  // five-part internship is one node and the members are not drawn at all.
+  const SERIES = curriculum.series || {};
+  const SERIES_OF = {};
+  Object.entries(SERIES).forEach(([sid, s]) => (s.members||[]).forEach(m => SERIES_OF[m] = sid));
+  const isMember = id => !!SERIES_OF[id];
+
   const DB = {};
   Object.entries(curriculum.courses).forEach(([code, c]) => DB[code] = {
     id:code, pre:c.pre||[], co:c.co||[], anyOf:c.anyOf||[], flags:c.flags||[]
   });
+  Object.entries(SERIES).forEach(([sid, s]) => DB[sid] = {
+    id:sid, pre:s.pre||[], co:s.co||[], anyOf:s.anyOf||[], flags:s.flags||[]
+  });
+  const drawn = id => !isMember(id);
   const HARD = {};
   const hardAnc = (id, acc) => {
     if(!acc && HARD[id]) return HARD[id];
@@ -90,8 +101,8 @@ try {
   const directPre = n => n.pre.filter(p => !n.pre.some(q => q !== p && DB[q] && hardAnc(q).has(p)));
 
   const els = [];
-  Object.values(DB).forEach(n => els.push({ data:{ id:n.id } }));
-  Object.values(DB).forEach(n => {
+  Object.values(DB).filter(n => drawn(n.id)).forEach(n => els.push({ data:{ id:n.id } }));
+  Object.values(DB).filter(n => drawn(n.id)).forEach(n => {
     directPre(n).forEach(p => DB[p] && els.push({data:{id:`${p}->${n.id}`, source:p, target:n.id}}));
     n.co.forEach(p => DB[p] && els.push({data:{id:`${p}~>${n.id}`, source:p, target:n.id}}));
     n.anyOf.forEach(g => g.forEach(p => DB[p] && els.push({data:{id:`${p}?>${n.id}`, source:p, target:n.id}})));
@@ -100,7 +111,7 @@ try {
 
   const relations = id => {
     const n = DB[id];
-    return [...new Set([...n.pre, ...n.co, ...n.anyOf.flat()])].filter(x => DB[x]);
+    return [...new Set([...n.pre, ...n.co, ...n.anyOf.flat()])].filter(x => DB[x] && drawn(x));
   };
   // No readiness pair here: this page has no running app to compare against,
   // and comparing a function to itself would prove nothing. checkRender skips

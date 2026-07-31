@@ -31,6 +31,7 @@ function checkData(curriculum, classes) {
   const warn = (code, message) => out.push({ level: 'warn', code, message });
 
   const courses = (curriculum && curriculum.courses) || {};
+  const seriesDefs = (curriculum && curriculum.series) || {};
   const tracks = (curriculum && curriculum.tracks) || {};
   const reqs = (curriculum && curriculum.requirements) || {};
   const goals = (curriculum && curriculum.goals) || [];
@@ -41,21 +42,65 @@ function checkData(curriculum, classes) {
 
   // --- curriculum ---------------------------------------------------------
   const known = id => Object.prototype.hasOwnProperty.call(courses, id);
+  // A requirement may name a course or a series; both are things you can finish.
+  const knownRef = id => known(id) || Object.prototype.hasOwnProperty.call(seriesDefs, id);
 
   Object.entries(courses).forEach(([id, c]) => {
     if (!c.title || !String(c.title).trim()) err('title', `${id} has no title`);
     if (!Number.isInteger(c.units) || c.units <= 0) err('units', `${id} has units ${JSON.stringify(c.units)}, expected a positive integer`);
     if (!tracks[c.track]) err('track', `${id} is on track "${c.track}", which is not declared`);
 
-    (c.pre || []).forEach(p => { if (!known(p)) err('dangling', `${id} requires ${p}, which is not in the curriculum`); });
-    (c.co || []).forEach(p => { if (!known(p)) err('dangling', `${id} lists corequisite ${p}, which is not in the curriculum`); });
+    (c.pre || []).forEach(p => { if (!knownRef(p)) err('dangling', `${id} requires ${p}, which is not in the curriculum`); });
+    (c.co || []).forEach(p => { if (!knownRef(p)) err('dangling', `${id} lists corequisite ${p}, which is not in the curriculum`); });
     (c.anyOf || []).forEach((g, i) => {
       if (!Array.isArray(g) || g.length < 2) err('anyOf', `${id} anyOf group ${i + 1} needs at least two options`);
-      (g || []).forEach(p => { if (!known(p)) err('dangling', `${id} anyOf names ${p}, which is not in the curriculum`); });
+      (g || []).forEach(p => { if (!knownRef(p)) err('dangling', `${id} anyOf names ${p}, which is not in the curriculum`); });
     });
     (c.flags || []).forEach(f => { if (!reqs[f]) err('flag', `${id} requires "${f}", which is not a declared requirement`); });
 
     if ((c.pre || []).includes(id) || (c.co || []).includes(id)) err('self', `${id} requires itself`);
+  });
+
+  // --- series ---------------------------------------------------------------
+  const series = seriesDefs;
+  const memberOwner = {};
+
+  Object.entries(series).forEach(([sid, s]) => {
+    if (known(sid)) err('series', `"${sid}" is both a series and a course`);
+    if (!s.title) err('series', `series "${sid}" has no title`);
+    const members = s.members || [];
+    if (members.length < 2) err('series', `series "${sid}" needs at least two members`);
+    const req = s.required === undefined ? members.length : s.required;
+    if (!Number.isInteger(req) || req < 1 || req > members.length)
+      err('series', `series "${sid}" requires ${req} of ${members.length} members, which is impossible`);
+    members.forEach(m => {
+      if (!known(m)) { err('series', `series "${sid}" names member ${m}, which is not a course`); return; }
+      if (memberOwner[m]) err('series', `${m} belongs to both ${memberOwner[m]} and ${sid}`);
+      memberOwner[m] = sid;
+      if (courses[m].series !== sid)
+        err('series', `${m} is listed under series ${sid} but declares series "${courses[m].series}"`);
+      const c = courses[m];
+      if ((c.pre || []).length || (c.anyOf || []).length || (c.flags || []).length)
+        warn('series', `${m} carries its own prerequisites; members normally inherit them from ${sid}`);
+    });
+  });
+
+  Object.entries(courses).forEach(([id, c]) => {
+    if (c.series && !series[c.series]) err('series', `${id} declares series "${c.series}", which is not defined`);
+  });
+
+  // References must name the series, never one of its parts.
+  const refersToMember = (from, ref) => {
+    if (memberOwner[ref]) err('series', `${from} requires ${ref}, a part of ${memberOwner[ref]} — reference the series instead`);
+  };
+  Object.entries(courses).forEach(([id, c]) => {
+    (c.pre || []).forEach(p => refersToMember(id, p));
+    (c.co || []).forEach(p => refersToMember(id, p));
+    (c.anyOf || []).forEach(g => (g || []).forEach(p => refersToMember(id, p)));
+  });
+  Object.entries(series).forEach(([sid, s]) => {
+    (s.pre || []).forEach(p => refersToMember(sid, p));
+    (s.co || []).forEach(p => refersToMember(sid, p));
   });
 
   // cycles: a course that can never be taken
@@ -70,11 +115,14 @@ function checkData(curriculum, classes) {
     }
     state[id] = 'open';
     stack.push(id);
-    ((courses[id] || {}).pre || []).forEach(p => { if (known(p)) visit(p); });
+    // Follow series prerequisites too, or a cycle running through one would go
+    // unnoticed: CL700 requires CL600, and both are series.
+    const pre = (courses[id] || series[id] || {}).pre || [];
+    pre.forEach(p => { if (knownRef(p)) visit(p); });
     stack.pop();
     state[id] = 'done';
   }
-  Object.keys(courses).forEach(visit);
+  Object.keys(courses).concat(Object.keys(series)).forEach(visit);
 
   // requirements and goals
   Object.entries(reqs).forEach(([k, r]) => {
@@ -85,7 +133,7 @@ function checkData(curriculum, classes) {
     }
   });
   goals.forEach(g => {
-    if (g.id !== 'ALL' && !known(g.id)) err('goal', `goal "${g.id}" targets a course that is not in the curriculum`);
+    if (g.id !== 'ALL' && !knownRef(g.id)) err('goal', `goal "${g.id}" targets a course that is not in the curriculum`);
     if (!g.name) err('goal', `goal "${g.id}" has no name`);
   });
   if (!goals.some(g => g.id === 'ALL')) warn('goal', 'no "ALL" goal, so there is no way to see the whole programme');
@@ -147,10 +195,24 @@ function checkRender(curriculum, classes, view) {
   const err = (code, message) => out.push({ level: 'error', code, message });
   const offered = Object.keys((classes && classes.classes) || {});
 
+  const courses = curriculum.courses || {};
+  const series = curriculum.series || {};
+  const ownerOf = {};
+  Object.entries(series).forEach(([sid, s]) => (s.members || []).forEach(m => ownerOf[m] = sid));
+  // A series member is represented by its series, not by a node of its own.
+  const standsFor = id => ownerOf[id] || id;
+
   const nodes = new Set(view.nodes);
-  offered.forEach(id => { if (!nodes.has(id)) err('node', `${id} runs this term but has no node`); });
+  offered.forEach(id => {
+    if (!nodes.has(standsFor(id)))
+      err('node', `${id} runs this term but nothing on the graph stands for it`);
+  });
   view.nodes.forEach(id => {
-    if (!(curriculum.courses || {})[id]) err('node', `a node exists for ${id}, which is not in the curriculum`);
+    if (!courses[id] && !series[id]) err('node', `a node exists for ${id}, which is not in the curriculum`);
+    if (ownerOf[id]) err('node', `${id} has its own node, but it is a part of ${ownerOf[id]} and should be folded into it`);
+  });
+  Object.keys(series).forEach(sid => {
+    if (!nodes.has(sid)) err('node', `series ${sid} has no node`);
   });
 
   // Every relation must be expressed directly (its own edge) or transitively
@@ -164,7 +226,7 @@ function checkRender(curriculum, classes, view) {
 
   // No edge may exist without a relation behind it.
   view.edges.forEach(e => {
-    const c = (curriculum.courses || {})[e.target] || {};
+    const c = courses[e.target] || series[e.target] || {};
     const backed = (c.pre || []).includes(e.source)
       || (c.co || []).includes(e.source)
       || (c.anyOf || []).some(g => g.includes(e.source));

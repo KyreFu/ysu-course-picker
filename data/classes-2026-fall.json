@@ -86,14 +86,28 @@
     "WM432": [{ "section": "1", "meetings": [{ "day": "M", "start": "6p", "end": "8p" }], "instructor": "Smith", "mode": "online" }],
 
     "CL100": [{ "section": "1", "meetings": [{ "day": "W", "start": "1p", "end": "4p" }], "instructor": "Luca & Team", "mode": "online" }],
-    "CL310": [
-      { "section": "1", "meetings": [{ "day": "M", "start": "1p", "end": "4p" }], "instructor": "Chang", "mode": "in-person" },
-      { "section": "2", "meetings": [{ "day": "Tu", "start": "9a", "end": "12p" }], "instructor": "Plymale-Mallory", "mode": "in-person" }
-    ],
-    "CL400": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
-    "CL600": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
-    "CL700": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
-    "CL800": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL310A": [{ "section": "1", "meetings": [{ "day": "M", "start": "1p", "end": "4p" }], "instructor": "Chang", "mode": "in-person" }],
+    "CL310B": [{ "section": "1", "meetings": [{ "day": "Tu", "start": "9a", "end": "12p" }], "instructor": "Plymale-Mallory", "mode": "in-person" }],
+
+    "CL400A": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL400B": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL400C": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+
+    "CL600A": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL600B": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL600C": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL600D": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL600E": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+
+    "CL700A": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL700B": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL700C": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL700D": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+
+    "CL800A": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL800B": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL800C": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
+    "CL800D": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
     "CL880": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
     "CL611": [{ "section": "1", "meetings": [{ "day": "W", "start": "10a", "end": "12p" }], "instructor": "Berletich", "mode": "online" }],
     "CL711": [{ "section": "1", "meetings": [{ "day": "Tu", "start": "9a", "end": "12p" }], "instructor": "Lin", "mode": "online" }],
