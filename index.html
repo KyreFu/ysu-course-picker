@@ -207,8 +207,8 @@
     </div>
     <div class="sec">
       <h2>Non-course requirements</h2>
-      <label class="chk"><input type="checkbox" id="req-hours"> 150 hours clinical theater &amp; observation</label>
-      <label class="chk"><input type="checkbox" id="req-certs"> CPR, first aid and CNT certification</label>
+      <label class="chk"><input type="checkbox" id="req-hours"> <span id="lbl-hours"></span></label>
+      <label class="chk"><input type="checkbox" id="req-certs"> <span id="lbl-certs"></span></label>
       <div class="note" id="qi-note"></div>
     </div>
     <div class="sec">
@@ -326,11 +326,18 @@ const TRACK_COLOURS = {
   ex:{ bg:'#FAEEDA', line:'#BA7517', ink:'#412402' },
   pd:{ bg:'#F1EFE8', line:'#888780', ink:'#2C2C2A' }
 };
-const FALLBACK_COLOUR = { bg:'#F1EFE8', line:'#888780', ink:'#2C2C2A' };
+/* A track the palette doesn't know about still needs to be told apart from the
+   others, so derive a stable colour from its key rather than making every
+   unknown track the same grey. */
+function derivedColour(key){
+  let h = 0;
+  for(let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) % 360;
+  return { bg:`hsl(${h} 62% 94%)`, line:`hsl(${h} 45% 48%)`, ink:`hsl(${h} 55% 22%)` };
+}
 
 const TRACKS = {};
 Object.entries(CURRICULUM.tracks).forEach(([k, t]) =>
-  TRACKS[k] = Object.assign({ name:t.name }, TRACK_COLOURS[k] || FALLBACK_COLOUR));
+  TRACKS[k] = Object.assign({ name:t.name }, TRACK_COLOURS[k] || derivedColour(k)));
 
 const DB = {};
 Object.entries(CURRICULUM.courses).forEach(([code, c]) => DB[code] = {
@@ -381,11 +388,21 @@ function seriesUnits(sid){
 
 addSeriesToDB();
 
+const REQS = CURRICULUM.requirements || {};
+const reqLabel = f => (REQS[f] && REQS[f].label) || f;
+
 const GOALS = CURRICULUM.goals;
 const QI = ((CURRICULUM.requirements||{}).qi||{}).countsToward || [];
 const QI_UNITS = ((CURRICULUM.requirements||{}).qi||{}).units || 4;
 
 // Which courses actually run this term, and their sections.
+/* Every string below comes from a file someone else maintains, so none of it is
+   trusted as markup. A title containing an ampersand, a quote or an angle
+   bracket must appear as typed, not disappear into the DOM. */
+const esc = s => String(s == null ? '' : s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
 const SECTIONS = TERM.classes || {};
 const hasClasses = id => Object.prototype.hasOwnProperty.call(SECTIONS, id);
 // The class file is keyed by member, so a series runs if any part of it does.
@@ -451,7 +468,7 @@ function conflicts(idA, idB){
 // Compact one-line description of a section, for the chooser.
 function sectionSummary(s){
   const when = s.times.map(t => `${t.day} ${fmt(t.a)}-${fmt(t.b)}`).join(', ');
-  return s.instructor ? `${when} · ${s.instructor}` : when;
+  return s.instructor ? `${when} · ${esc(s.instructor)}` : when;
 }
 function fmt(m){
   const h = Math.floor(m/60), mm = m % 60;
@@ -485,11 +502,11 @@ function seriesBlock(sid){
     <div class="list">${membersOf(sid).map(m => {
       const runs = hasClasses(m);
       const when = runs ? (SECTIONS[m]||[]).map(s => {
-        const bits = [sectionTime(s)];
-        if(s.instructor) bits.push(s.instructor);
+        const bits = [esc(sectionTime(s))];
+        if(s.instructor) bits.push(esc(s.instructor));
         if(modeLabel(s.mode)) bits.push(modeLabel(s.mode));
         return bits.join(' · ');
-      }).join(' | ') : `not offered ${TERM.label}`;
+      }).join(' | ') : `not offered ${esc(TERM.label)}`;
       return `<div class="row">
         <span class="code">${statusMark(m)} ${m}</span>
         <span class="nm">${when}</span>
@@ -497,7 +514,7 @@ function seriesBlock(sid){
         ${done.has(m) ? ''
           : runs
             ? `<button class="add ${plan.has(m)?'in':''}" data-add="${m}" title="${plan.has(m)?'Remove from plan':'Add this part to plan'}">${plan.has(m)?'&minus;':'+'}</button>`
-            : `<button class="add" disabled title="Not offered ${TERM.label} — you can still mark it completed">+</button>`}
+            : `<button class="add" disabled title="Not offered ${esc(TERM.label)} — you can still mark it completed">+</button>`}
       </div>`;
     }).join('')}</div>
     <p class="note" style="margin:7px 0 0">All ${req} parts are required. Anything that needs ${sid} unlocks only when every part is complete.</p>`;
@@ -507,20 +524,20 @@ function sectionsBlock(id){
   if(isSeries(id)) return seriesBlock(id);
   if(!isOffered(id))
     return `<h2 style="margin-top:16px">Sections</h2>
-      <div class="empty">Not offered ${TERM.label}. It stays on the graph so chains that pass through it stay readable.</div>`;
+      <div class="empty">Not offered ${esc(TERM.label)}. It stays on the graph so chains that pass through it stay readable.</div>`;
   const secs = SECTIONS[id] || [];
   const pick = plan.get(id);
   const timed = (SLOTS[id] || []).length > 0;
   return `<h2 style="margin-top:16px">Sections (${secs.length})</h2>
     <div class="list">${secs.map(s => {
       const bits = [];
-      if(s.instructor) bits.push(s.instructor);
+      if(s.instructor) bits.push(esc(s.instructor));
       if(modeLabel(s.mode)) bits.push(modeLabel(s.mode));
       const taking = plan.has(id) && pick === s.section;
       return `<div class="row" style="cursor:default">
-        <span class="code">${sectionTime(s)}</span>
+        <span class="code">${esc(sectionTime(s))}</span>
         <span class="nm">${bits.length ? bits.join(' · ') : '—'}</span>
-        ${timed ? `<button class="add ${taking?'in':''}" data-take="${id}|${s.section}"
+        ${timed ? `<button class="add ${taking?'in':''}" data-take="${id}|${esc(s.section)}"
             title="${taking ? 'Taking this one — click to leave the section open' : 'Take this section'}">${taking?'&#10003;':'+'}</button>` : ''}
       </div>`;
     }).join('')}</div>
@@ -947,7 +964,7 @@ function renderBrowse(){
   box.innerHTML = list.length
     ? list.map(n => `<div class="row" data-go="${n.id}">
         <span class="code">${browseMark(n.id)} ${n.id}</span>
-        <span class="nm">${isOffered(n.id) ? n.title : `${n.title} · not this term`}</span>
+        <span class="nm">${isOffered(n.id) ? esc(n.title) : `${esc(n.title)} · not this term`}</span>
       </div>`).join('')
     : `<div class="empty">${query
         ? 'Nothing matches inside this goal — try the Whole program goal.'
@@ -976,19 +993,20 @@ function renderDetail(){
     ...n.anyOf.map(g => ({id:g.join(' or '), tag:'one of', ok:g.some(x => done.has(x))}))
   ];
   const flagRows = n.flags.map(f => ({
-    label: f==='hours' ? '150 hrs theater & observation'
-         : f==='certs' ? 'CPR, first aid, CNT certs'
-         : `4 units qi cultivation (have ${qiUnits()})`,
+    // Labels come from the data, so renaming a requirement renames it here too.
+    label: REQS[f] && REQS[f].kind === 'units'
+      ? `${reqLabel(f)} — have ${qiUnits()}`
+      : reqLabel(f),
     ok: flagOk(f)
   }));
   box.innerHTML = `
     <button class="lnk" id="back" style="margin-bottom:10px">&larr; All courses</button>
     <h2>Course detail</h2>
-    <h3>${n.id} · ${n.title}</h3>
-    <div class="dsub">${n.units} unit${n.units>1?'s':''} · ${meetLabel(n.id)}</div>
-    <span class="pill" style="background:${t.bg};border-color:${t.line};color:${t.ink}">${t.name}</span>
+    <h3>${n.id} · ${esc(n.title)}</h3>
+    <div class="dsub">${n.units} unit${n.units>1?'s':''} · ${esc(meetLabel(n.id))}</div>
+    <span class="pill" style="background:${t.bg};border-color:${t.line};color:${t.ink}">${esc(t.name)}</span>
     ${done.has(n.id) ? '<span class="pill" style="background:#e1f5ee;border-color:#0f6e56;color:#04342C">completed</span>'
-      : !isOffered(n.id) ? `<span class="pill" style="background:#f2f3f1;border-color:#cdd1cd;color:#5c6a68">not offered ${TERM.label}</span>`
+      : !isOffered(n.id) ? `<span class="pill" style="background:#f2f3f1;border-color:#cdd1cd;color:#5c6a68">not offered ${esc(TERM.label)}</span>`
       : ready(n.id) ? '<span class="pill" style="background:#e1f5ee;border-color:#0f6e56;color:#04342C">ready to take</span>'
       : '<span class="pill" style="background:#faeeda;border-color:#BA7517;color:#412402">blocked</span>'}
     ${isSeries(n.id) ? '' : `<div style="margin:12px 0;display:flex;gap:7px">
@@ -1008,14 +1026,14 @@ function renderDetail(){
         <span class="nm">${r.tag}</span></div>`).join('') +
       flagRows.map(r => `<div class="row" style="cursor:default">
         <span class="code">${r.ok?'<span class="tick">✓</span>':'<span class="cross">○</span>'} —</span>
-        <span class="nm">${r.label}</span></div>`).join('')
+        <span class="nm">${esc(r.label)}</span></div>`).join('')
     }</div>
     <h2 style="margin-top:16px">Unlocks (${unlocks.length})</h2>
     <div class="list">${
       unlocks.length === 0 ? '<div class="empty">Nothing depends on this course.</div>' :
       unlocks.map(m => `<div class="row" data-go="${m.id}">
         <span class="code">${m.id}</span>
-        <span class="nm">${m.title}</span></div>`).join('')
+        <span class="nm">${esc(m.title)}</span></div>`).join('')
     }</div>`;
   const back = document.getElementById('back');
   if(back) back.onclick = () => focus(null);
@@ -1056,7 +1074,7 @@ function renderGoals(){
              <span>${gotU} / ${units} units</span></div>`;
     }
     return `<button class="goal ${goal===g.id?'on':''}" data-g="${g.id}">
-      <span class="gt">${g.name}</span><div class="gs">${g.sub}</div>${bar}</button>`;
+      <span class="gt">${esc(g.name)}</span><div class="gs">${esc(g.sub)}</div>${bar}</button>`;
   }).join('');
   document.querySelectorAll('[data-g]').forEach(b => b.onclick = () => {
     goal = b.getAttribute('data-g');
@@ -1144,7 +1162,19 @@ function togglePlan(id){
 }
 
 const DAYS = ['M','Tu','W','Th','F','Sa'];
-const DAY_START = 480, DAY_END = 1260;
+
+/* The grid used to assume an 8a-9p day. Any class the registrar puts outside
+   that was silently clipped, so the window is taken from the data instead:
+   the earliest start and latest end actually scheduled, rounded to the hour
+   and never narrower than 8a-9p. */
+const [DAY_START, DAY_END] = (() => {
+  let lo = 8*60, hi = 21*60;
+  Object.values(SLOTS).forEach(secs => secs.forEach(s => s.times.forEach(t => {
+    if(t.a < lo) lo = t.a;
+    if(t.b > hi) hi = t.b;
+  })));
+  return [Math.floor(lo/60)*60, Math.ceil(hi/60)*60];
+})();
 
 function renderWeek(ids, assign){
   const wk = document.getElementById('week');
@@ -1153,7 +1183,7 @@ function renderWeek(ids, assign){
   wk.className = 'wk on';
   const span = DAY_END - DAY_START;
   const hours = [];
-  for(let h = 8; h <= 20; h += 2)
+  for(let h = DAY_START/60; h <= DAY_END/60 - 1; h += 2)
     hours.push(`<i style="top:${100*(h*60-DAY_START)/span}%">${h>12?h-12:h}${h>=12?'p':'a'}</i>`);
   // One block per meeting, since a section can meet more than once a week.
   const blocks = [];
@@ -1166,9 +1196,9 @@ function renderWeek(ids, assign){
     return `<div class="wk-col">` + here.map(b => {
       const t = TRACKS[DB[b.id].track];
       const bad = here.some(q => q !== b && timesClash(b.t, q.t));
-      const who = b.sec.instructor ? ` · ${b.sec.instructor}` : '';
-      const which = (SLOTS[b.id]||[]).length > 1 ? ` · section ${b.sec.section}` : '';
-      return `<div class="blk ${bad?'clash':''}" data-go="${b.id}" style="top:${100*(b.t.a-DAY_START)/span}%;height:${100*(b.t.b-b.t.a)/span}%;background:${t.bg};border-color:${t.line};color:${t.ink}" title="${b.id} · ${DB[b.id].title}${which}${who} — click for detail">${b.id}</div>`;
+      const who = b.sec.instructor ? ` · ${esc(b.sec.instructor)}` : '';
+      const which = (SLOTS[b.id]||[]).length > 1 ? ` · section ${esc(b.sec.section)}` : '';
+      return `<div class="blk ${bad?'clash':''}" data-go="${b.id}" style="top:${100*(b.t.a-DAY_START)/span}%;height:${100*(b.t.b-b.t.a)/span}%;background:${t.bg};border-color:${t.line};color:${t.ink}" title="${b.id} · ${esc(DB[b.id].title)}${which}${who} — click for detail">${b.id}</div>`;
     }).join('') + `</div>`;
   }).join('');
   wk.innerHTML =
@@ -1205,12 +1235,12 @@ function renderPlan(){
     const chooser = secs.length > 1
       ? `<select class="pick" data-pick="${id}" title="Which section are you taking?">
            <option value=""${pick == null ? ' selected' : ''}>Any section</option>
-           ${secs.map(s => `<option value="${s.section}"${pick === s.section ? ' selected' : ''}>${sectionSummary(s)}</option>`).join('')}
+           ${secs.map(s => `<option value="${esc(s.section)}"${pick === s.section ? ' selected' : ''}>${esc(sectionSummary(s))}</option>`).join('')}
          </select>`
       : '';
     return `<div class="row ${inClash.has(id)?'bad':''}">
       <span class="code" data-go="${id}">${id}</span>
-      <span class="nm">${chooser ? `${n.units}u` : `${meetLabel(id)} · ${n.units}u`}</span>
+      <span class="nm">${chooser ? `${n.units}u` : `${esc(meetLabel(id))} · ${n.units}u`}</span>
       ${chooser}
       ${notReady ? '<span class="warn-dot" title="Prerequisites not yet marked complete">&#9650;</span>' : ''}
       <button class="add in" data-drop="${id}" title="Remove from plan">&times;</button>
@@ -1220,7 +1250,7 @@ function renderPlan(){
   let msg;
   if(hard.length){
     msg = `<div class="banner no"><b>Time conflict</b><ul>` +
-      hard.map(([a,b]) => `<li>${a}${allSections(a)} and ${b}${allSections(b)} — ${meetLabel(a)}</li>`).join('') + `</ul></div>`;
+      hard.map(([a,b]) => `<li>${a}${allSections(a)} and ${b}${allSections(b)} — ${esc(meetLabel(a))}</li>`).join('') + `</ul></div>`;
   } else if(!assign){
     msg = `<div class="banner no"><b>Sections can't all be reconciled</b> — every combination leaves an overlap somewhere. Drop one course.</div>`;
   } else {
@@ -1262,7 +1292,7 @@ function renderCompleted(){
         const p = seriesProgress(id);
         return `<div class="row">
         <span class="code" data-go="${id}">${id}</span>
-        <span class="nm" data-go="${id}">${DB[id].title}${p ? ` · ${p}` : ''}</span>
+        <span class="nm" data-go="${id}">${esc(DB[id].title)}${p ? ` · ${p}` : ''}</span>
         <button class="add in" data-undo="${id}" title="${isSeries(id) ? 'Mark none of these completed' : 'Mark not completed'}">&#8634;</button>
       </div>`; }).join('')
     : '<div class="empty">Nothing marked complete yet.</div>';
@@ -1278,14 +1308,14 @@ function renderReady(){
   document.getElementById('ready').innerHTML = list.length
     ? list.map(({n,i}) => `<div class="row">
         <span class="code" data-go="${n.id}">${n.id}</span>
-        <span class="nm" data-go="${n.id}">${n.title}</span>
+        <span class="nm" data-go="${n.id}">${esc(n.title)}</span>
         <span class="imp" style="${impStyle(i.count, max)}" title="Unlocks ${i.count} further course${i.count===1?'':'s'} toward this goal">${i.count}</span>
         ${isSeries(n.id)
           ? `<button class="add" data-go="${n.id}" title="${membersOf(n.id).length} parts — open it to choose one">&rsaquo;</button>`
           : `<button class="add" data-done="${n.id}" title="Mark completed">&#10003;</button>
              ${isOffered(n.id)
                ? `<button class="add ${plan.has(n.id)?'in':''}" data-add="${n.id}" title="${plan.has(n.id)?'Remove from plan':'Add to plan'}">${plan.has(n.id)?'&minus;':'+'}</button>`
-               : `<button class="add" disabled title="Not offered ${TERM.label} — you can still mark it completed">+</button>`}`}
+               : `<button class="add" disabled title="Not offered ${esc(TERM.label)} — you can still mark it completed">+</button>`}`}
       </div>`).join('')
     : '<div class="empty">Nothing unlocked yet — start marking off what you\'ve finished.</div>';
   document.querySelectorAll('#ready [data-go]').forEach(el =>
@@ -1295,7 +1325,7 @@ function renderReady(){
   document.querySelectorAll('#ready [data-add]').forEach(b =>
     b.onclick = e => { e.stopPropagation(); togglePlan(b.getAttribute('data-add')); });
   document.getElementById('qi-note').textContent =
-    `Qi cultivation: ${qiUnits()} of 4 units complete — counts QC and tai chi courses you've marked off.`;
+    `${reqLabel('qi')}: ${qiUnits()} of ${QI_UNITS} units complete — counts the ${QI.length} courses named in the curriculum.`;
 }
 
 /* Everything the app knows about its own limits comes from the data files, so
@@ -1304,7 +1334,7 @@ function renderNotes(){
   const notes = [...(CURRICULUM.notes || []), ...(TERM.notes || [])];
   const box = document.getElementById('data-notes');
   box.innerHTML = notes.length
-    ? `<ul class="notes">${notes.map(n => `<li>${n}</li>`).join('')}</ul>`
+    ? `<ul class="notes">${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>`
     : '<p class="note">No notes recorded for this data.</p>';
   const s = TERM.source || {};
   document.getElementById('notes-src').textContent =
@@ -1313,7 +1343,7 @@ function renderNotes(){
 
 function renderLegend(){
   document.getElementById('legend').innerHTML = Object.entries(TRACKS).map(([k,t]) =>
-    `<span class="lg" style="background:${t.bg};border-color:${t.line};color:${t.ink}">${t.name}</span>`).join('');
+    `<span class="lg" style="background:${t.bg};border-color:${t.line};color:${t.ink}">${esc(t.name)}</span>`).join('');
 }
 
 function renderAll(){ renderGoals(); renderCompleted(); renderReady(); renderPlan(); renderDetail(); }
@@ -1381,6 +1411,8 @@ document.title = `Yo San — prerequisite explorer, ${TERM.label}`;
 load();
 document.getElementById('req-hours').checked = extra.hours;
 document.getElementById('req-certs').checked = extra.certs;
+document.getElementById('lbl-hours').textContent = reqLabel('hours');
+document.getElementById('lbl-certs').textContent = reqLabel('certs');
 renderLegend();
 renderNotes();
 applyGoal();

@@ -232,6 +232,18 @@ A course in the curriculum with no entry in the class file is understood as not 
 
 Bump `SCHEMA` in `index.html` only if you change the shape of *saved progress*, so old backups are rejected clearly. That's separate from `schemaVersion` in the data files, which guards the data format — bumping one must not invalidate the other.
 
+### What the page does not assume about the data
+
+The data is expected to change a great deal — courses renamed, tracks added, times moved — so the page derives what it can rather than hard-coding it.
+
+- **Text is never treated as markup.** A title, instructor or note containing `&`, `<` or a quote appears exactly as typed. Before this, a course called `Diagnosis <adv>` silently lost the `<adv>` into the DOM.
+- **Requirement wording comes from the data.** Rename the 150-hour requirement in `curriculum.json` and the checkbox, the detail panel and the qi note all follow.
+- **Unknown tracks still get a colour.** `index.html` holds a palette for the eight current tracks; a track it doesn't recognise gets a colour derived from its key, so a new one is distinguishable rather than another grey.
+- **The week grid fits the timetable.** Its window is the earliest start and latest end actually scheduled, never narrower than 8a–9p — an early-morning or late-evening class widens the grid instead of being clipped.
+- **A section may meet several times a week**, and a course may have any number of sections.
+
+What stays hard-coded, deliberately: the colours for the eight known tracks, and the standing advice about Override Petitions.
+
 ## Checking the data
 
 Open **`validate.html`** after editing anything in `data/`. It reads the same files the explorer reads and reports what it finds, in plain language.
