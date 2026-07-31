@@ -76,6 +76,14 @@ Click `+` on any ready course to add it to **My plan**. The detail panel also ha
 
 The plan checks for time conflicts and shows a week grid of the result. Conflict detection is section-aware: CM112 and AC301 both meet Monday at 9, but AC301 has a noon section, so that's not a conflict and the grid shows you the combination that works. Add HM320 — also Monday 9a, one section only — and it flags the unavoidable pair by name.
 
+### Choosing a section
+
+Where a course has more than one opening, the plan row carries a dropdown listing them by time and instructor — *M 3p-6p · Deng* or *Th 9a-12p · Garcia*. You can also pick straight from the course detail, where each section shows its own **+**.
+
+Until you choose, the row says **Any section** and the solver keeps finding a combination that fits. Once you choose, that section is fixed and everything else works around it. This matters: if you pin AC301 to its Monday 9a section while CM112 is planned, the tool reports the conflict rather than quietly moving you to the noon section. Picking the section you're actually enrolled in is what makes the grid true.
+
+Clicking the section you already hold releases the choice without dropping the course.
+
 Courses with arranged times (internships, observation, herb labs, exams) sit in the list but not the grid, and never count as conflicts.
 
 Blocks in the grid are clickable — click one for that course's detail in the right panel, the same as clicking its node or its row in the course list. Useful when a conflict is flagged and you want to see what each side of it actually needs.

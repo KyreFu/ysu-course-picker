@@ -73,6 +73,12 @@
   }
   .mini:hover{border-color:var(--accent);color:var(--accent)}
   .tally{font-size:11px;color:var(--ink-3);font-weight:400;letter-spacing:0;text-transform:none}
+  .pick{
+    flex:1;min-width:0;max-width:60%;font:inherit;font-size:11px;
+    padding:1px 3px;border:1px solid var(--rule-2);border-radius:5px;
+    background:var(--panel);color:var(--ink-2);cursor:pointer;
+  }
+  .pick:hover{border-color:var(--accent);color:var(--accent)}
   .add{
     flex:none;width:19px;height:19px;line-height:1;padding:0;border-radius:5px;
     border:1px solid var(--rule-2);background:var(--panel);color:var(--ink-2);
@@ -396,32 +402,63 @@ function mins(t){
   if(m[3] === 'p') h += 12;
   return h*60 + (m[2] ? +m[2] : 0);
 }
-// One entry per section that has a meeting. A section with no meetings has an
-// arranged time: it never enters the week grid and never counts as a conflict.
+/* One entry per section that meets, each holding all of that section's times —
+   a section can meet more than once a week. A section with no meetings has an
+   arranged time: it never enters the week grid and never counts as a conflict. */
 const SLOTS = {};
 Object.entries(SECTIONS).forEach(([id, sections]) => {
-  const slots = [];
-  sections.forEach(s => (s.meetings||[]).forEach(m => {
-    const a = mins(m.start), b = mins(m.end);
-    if(a !== null && b !== null) slots.push({ day:m.day, a, b, section:s.section });
-  }));
-  if(slots.length) SLOTS[id] = slots;
+  const secs = [];
+  sections.forEach(s => {
+    const times = (s.meetings||[]).map(m => ({ day:m.day, a:mins(m.start), b:mins(m.end) }))
+      .filter(t => t.a !== null && t.b !== null);
+    if(times.length) secs.push({ section:s.section, times, instructor:s.instructor, mode:s.mode });
+  });
+  if(secs.length) SLOTS[id] = secs;
 });
 
-function sectionsClash(x, y){
+function timesClash(x, y){
   return x.day === y.day && x.a < y.b && y.a < x.b;
 }
-// A conflict only counts when every section combination overlaps, so when a
-// course has several sections it is worth saying so — none of them escape it.
+function sectionsClash(A, B){
+  return A.times.some(x => B.times.some(y => timesClash(x, y)));
+}
+
+/* Which sections are still on the table for a planned course. Once the student
+   has chosen one, that is the only option; until then every section counts, and
+   a conflict is only reported when no combination avoids it. */
+function optionsFor(id){
+  const secs = SLOTS[id] || [];
+  const pick = plan.get(id);
+  if(pick == null) return secs;
+  const one = secs.filter(s => s.section === pick);
+  return one.length ? one : secs;
+}
+function chosenSection(id){
+  const pick = plan.get(id);
+  return pick == null ? null : (SLOTS[id]||[]).find(s => s.section === pick) || null;
+}
+// Worth saying when a clash survives every section rather than just one.
 function allSections(id){
-  const n = (SECTIONS[id] || []).filter(s => (s.meetings||[]).length).length;
+  const n = optionsFor(id).length;
   return n > 1 ? ` (all ${n} sections)` : '';
 }
 function conflicts(idA, idB){
-  const A = SLOTS[idA], B = SLOTS[idB];
-  if(!A || !B || !A.length || !B.length) return false;
+  const A = optionsFor(idA), B = optionsFor(idB);
+  if(!A.length || !B.length) return false;
   return A.every(a => B.every(b => sectionsClash(a, b)));
 }
+// Compact one-line description of a section, for the chooser.
+function sectionSummary(s){
+  const when = s.times.map(t => `${t.day} ${fmt(t.a)}-${fmt(t.b)}`).join(', ');
+  return s.instructor ? `${when} · ${s.instructor}` : when;
+}
+function fmt(m){
+  const h = Math.floor(m/60), mm = m % 60;
+  const ap = h >= 12 ? 'p' : 'a';
+  const hh = h % 12 === 0 ? 12 : h % 12;
+  return mm ? `${hh}:${String(mm).padStart(2,'0')}${ap}` : `${hh}${ap}`;
+}
+
 function sectionTime(s){
   const ms = s.meetings || [];
   return ms.length ? ms.map(m => `${m.day} ${m.start}-${m.end}`).join(', ') : 'time arranged';
@@ -471,16 +508,27 @@ function sectionsBlock(id){
     return `<h2 style="margin-top:16px">Sections</h2>
       <div class="empty">Not offered ${TERM.label}. It stays on the graph so chains that pass through it stay readable.</div>`;
   const secs = SECTIONS[id] || [];
+  const pick = plan.get(id);
+  const timed = (SLOTS[id] || []).length > 0;
   return `<h2 style="margin-top:16px">Sections (${secs.length})</h2>
     <div class="list">${secs.map(s => {
       const bits = [];
       if(s.instructor) bits.push(s.instructor);
       if(modeLabel(s.mode)) bits.push(modeLabel(s.mode));
+      const taking = plan.has(id) && pick === s.section;
       return `<div class="row" style="cursor:default">
         <span class="code">${sectionTime(s)}</span>
         <span class="nm">${bits.length ? bits.join(' · ') : '—'}</span>
+        ${timed ? `<button class="add ${taking?'in':''}" data-take="${id}|${s.section}"
+            title="${taking ? 'Taking this one — click to leave the section open' : 'Take this section'}">${taking?'&#10003;':'+'}</button>` : ''}
       </div>`;
-    }).join('')}</div>`;
+    }).join('')}</div>
+    ${secs.length > 1 ? `<p class="note" style="margin:7px 0 0">${
+      plan.has(id) && pick != null
+        ? 'Your plan uses this section.'
+        : plan.has(id)
+          ? 'No section chosen, so the week grid shows whichever one fits.'
+          : 'Pick one to add it to your plan with that section.'}</p>` : ''}`;
 }
 
 function lerp(a, b, t){
@@ -498,14 +546,15 @@ function impStyle(count, max){
 
 
 let done = new Set();
-let plan = new Set();
+let plan = new Map();   // course id -> chosen section id, or null for "any"
 let extra = {hours:false, certs:false};
 let goal = 'ALL';
 let selected = null;
 let query = '';
 
 const STORE_KEY = 'ysu-prereq';
-const SCHEMA = 1;
+// v2: the plan records which section was chosen, not just which course.
+const SCHEMA = 2;
 let storageOk = true;
 let lastSaved = null;
 
@@ -515,7 +564,8 @@ function snapshot(){
     v:SCHEMA,
     saved:new Date().toISOString(),
     done:[...done].sort(),
-    plan:[...plan].sort(),
+    // { courseId: chosenSectionId | null }
+    plan:Object.fromEntries([...plan.entries()].sort((a,b) => a[0].localeCompare(b[0]))),
     extra:{ hours:!!extra.hours, certs:!!extra.certs }
   };
 }
@@ -525,10 +575,17 @@ function restore(obj){
   if(obj.app !== 'ysu-prereq-explorer') throw new Error('That isn\'t a progress file from this tool.');
   if(typeof obj.v === 'number' && obj.v > SCHEMA) throw new Error('That file was saved by a newer version of this tool.');
   const arr = x => Array.isArray(x) ? x : [];
-  const all = [...arr(obj.done), ...arr(obj.plan)];
+  // v2 stores the plan as { courseId: chosenSectionId | null }.
+  const planEntries = (obj.plan && !Array.isArray(obj.plan) && typeof obj.plan === 'object')
+    ? Object.entries(obj.plan) : [];
+  const all = [...arr(obj.done), ...planEntries.map(e => e[0])];
   const dropped = [...new Set(all.filter(id => !DB[id]))];
   done  = new Set(arr(obj.done).filter(id => DB[id]));
-  plan  = new Set(arr(obj.plan).filter(id => DB[id]));
+  plan  = new Map(planEntries.filter(([id]) => DB[id]).map(([id, sec]) => {
+    // a section that no longer exists falls back to "any"
+    const ok = sec != null && (SLOTS[id]||[]).some(s => s.section === sec);
+    return [id, ok ? sec : null];
+  }));
   extra = { hours:!!(obj.extra && obj.extra.hours), certs:!!(obj.extra && obj.extra.certs) };
   return { dropped, saved:obj.saved };
 }
@@ -970,6 +1027,14 @@ function renderDetail(){
     b.onclick = e => { e.stopPropagation(); toggleDone(b.getAttribute('data-done')); });
   box.querySelectorAll('[data-add]').forEach(b =>
     b.onclick = e => { e.stopPropagation(); togglePlan(b.getAttribute('data-add')); });
+  box.querySelectorAll('[data-take]').forEach(b =>
+    b.onclick = e => {
+      e.stopPropagation();
+      const [cid, sec] = b.getAttribute('data-take').split('|');
+      // clicking the section you already hold releases the choice
+      if(plan.has(cid) && plan.get(cid) === sec) chooseSection(cid, '');
+      else planSection(cid, sec);
+    });
   box.querySelectorAll('[data-go]').forEach(el => {
     const id = el.getAttribute('data-go');
     if(id) el.onclick = () => focus(id);
@@ -1017,13 +1082,15 @@ function rankedReady(){
       a.n.id.localeCompare(b.n.id));
 }
 
+// Fits the planned courses together. A section the student has chosen is fixed;
+// the solver only searches over the ones still left open.
 function assignSections(ids){
-  const timed = ids.filter(id => SLOTS[id] && SLOTS[id].length);
+  const timed = ids.filter(id => optionsFor(id).length);
   const out = {};
   function bt(i){
     if(i === timed.length) return true;
     const id = timed[i];
-    for(const sec of SLOTS[id]){
+    for(const sec of optionsFor(id)){
       let ok = true;
       for(let j = 0; j < i; j++){
         if(sectionsClash(sec, out[timed[j]])){ ok = false; break; }
@@ -1056,10 +1123,22 @@ function toggleDone(id){
   save(); paint(); renderAll();
 }
 
+// Put a course in the plan and choose which section, in one go.
+function planSection(id, section){
+  if(!isOffered(id)) return;
+  plan.set(id, section);
+  save(); renderPlan(); renderReady(); renderDetail();
+}
+function chooseSection(id, section){
+  if(!plan.has(id)) return;
+  plan.set(id, section === '' ? null : section);
+  save(); renderPlan(); renderDetail();
+}
+
 function togglePlan(id){
   // A course that doesn't run this term can be marked complete but not planned.
   if(!plan.has(id) && !isOffered(id)) return;
-  plan.has(id) ? plan.delete(id) : plan.add(id);
+  plan.has(id) ? plan.delete(id) : plan.set(id, null);
   save(); renderPlan(); renderReady(); renderDetail();
 }
 
@@ -1068,20 +1147,27 @@ const DAY_START = 480, DAY_END = 1260;
 
 function renderWeek(ids, assign){
   const wk = document.getElementById('week');
-  const timed = ids.filter(id => SLOTS[id] && SLOTS[id].length);
+  const timed = ids.filter(id => optionsFor(id).length);
   if(!timed.length){ wk.className = 'wk'; wk.innerHTML = ''; return; }
   wk.className = 'wk on';
   const span = DAY_END - DAY_START;
   const hours = [];
   for(let h = 8; h <= 20; h += 2)
     hours.push(`<i style="top:${100*(h*60-DAY_START)/span}%">${h>12?h-12:h}${h>=12?'p':'a'}</i>`);
-  const placed = timed.map(id => ({ id, sec: (assign && assign[id]) || SLOTS[id][0] }));
+  // One block per meeting, since a section can meet more than once a week.
+  const blocks = [];
+  timed.forEach(id => {
+    const sec = (assign && assign[id]) || optionsFor(id)[0];
+    if(sec) sec.times.forEach(t => blocks.push({ id, sec, t }));
+  });
   const cols = DAYS.map(d => {
-    const here = placed.filter(p => p.sec.day === d);
-    return `<div class="wk-col">` + here.map(p => {
-      const t = TRACKS[DB[p.id].track];
-      const bad = here.some(q => q !== p && sectionsClash(p.sec, q.sec));
-      return `<div class="blk ${bad?'clash':''}" data-go="${p.id}" style="top:${100*(p.sec.a-DAY_START)/span}%;height:${100*(p.sec.b-p.sec.a)/span}%;background:${t.bg};border-color:${t.line};color:${t.ink}" title="${p.id} · ${DB[p.id].title} — click for detail">${p.id}</div>`;
+    const here = blocks.filter(b => b.t.day === d);
+    return `<div class="wk-col">` + here.map(b => {
+      const t = TRACKS[DB[b.id].track];
+      const bad = here.some(q => q !== b && timesClash(b.t, q.t));
+      const who = b.sec.instructor ? ` · ${b.sec.instructor}` : '';
+      const which = (SLOTS[b.id]||[]).length > 1 ? ` · section ${b.sec.section}` : '';
+      return `<div class="blk ${bad?'clash':''}" data-go="${b.id}" style="top:${100*(b.t.a-DAY_START)/span}%;height:${100*(b.t.b-b.t.a)/span}%;background:${t.bg};border-color:${t.line};color:${t.ink}" title="${b.id} · ${DB[b.id].title}${which}${who} — click for detail">${b.id}</div>`;
     }).join('') + `</div>`;
   }).join('');
   wk.innerHTML =
@@ -1092,7 +1178,7 @@ function renderWeek(ids, assign){
 }
 
 function renderPlan(){
-  const ids = [...plan].filter(id => DB[id]);
+  const ids = [...plan.keys()].filter(id => DB[id]);
   const box = document.getElementById('plan');
   const status = document.getElementById('plan-status');
   const units = ids.reduce((a,id) => a + DB[id].units, 0);
@@ -1112,9 +1198,19 @@ function renderPlan(){
   box.innerHTML = ids.map(id => {
     const n = DB[id];
     const notReady = !done.has(id) && !ready(id);
+    const secs = SLOTS[id] || [];
+    const pick = plan.get(id);
+    // Only worth a chooser when there is actually a choice to make.
+    const chooser = secs.length > 1
+      ? `<select class="pick" data-pick="${id}" title="Which section are you taking?">
+           <option value=""${pick == null ? ' selected' : ''}>Any section</option>
+           ${secs.map(s => `<option value="${s.section}"${pick === s.section ? ' selected' : ''}>${sectionSummary(s)}</option>`).join('')}
+         </select>`
+      : '';
     return `<div class="row ${inClash.has(id)?'bad':''}">
       <span class="code" data-go="${id}">${id}</span>
-      <span class="nm">${meetLabel(id)} · ${n.units}u</span>
+      <span class="nm">${chooser ? `${n.units}u` : `${meetLabel(id)} · ${n.units}u`}</span>
+      ${chooser}
       ${notReady ? '<span class="warn-dot" title="Prerequisites not yet marked complete">&#9650;</span>' : ''}
       <button class="add in" data-drop="${id}" title="Remove from plan">&times;</button>
     </div>`;
@@ -1127,7 +1223,7 @@ function renderPlan(){
   } else if(!assign){
     msg = `<div class="banner no"><b>Sections can't all be reconciled</b> — every combination leaves an overlap somewhere. Drop one course.</div>`;
   } else {
-    const flex = ids.filter(id => SLOTS[id] && SLOTS[id].length > 1).length;
+    const flex = ids.filter(id => optionsFor(id).length > 1).length;
     msg = `<div class="banner ok"><b>No conflicts</b> · ${units} units` +
       (units < 8 ? ' — below the 8-unit part-time floor' :
        units < 12 ? ' — below the 12-unit full-time floor' :
@@ -1140,6 +1236,10 @@ function renderPlan(){
 
   box.querySelectorAll('[data-drop]').forEach(b =>
     b.onclick = () => togglePlan(b.getAttribute('data-drop')));
+  box.querySelectorAll('[data-pick]').forEach(sel => {
+    sel.onchange = () => chooseSection(sel.getAttribute('data-pick'), sel.value);
+    sel.onclick = e => e.stopPropagation();
+  });
   box.querySelectorAll('[data-go]').forEach(el =>
     el.onclick = () => focus(el.getAttribute('data-go')));
 }
@@ -1232,7 +1332,7 @@ document.getElementById('file').onchange = e => {
 };
 document.getElementById('reset').onclick = () => {
   if(done.size + plan.size && !confirm('Clear all completed courses and your plan? Back up to a file first if you want to keep it.')) return;
-  done = new Set(); plan = new Set(); extra = {hours:false, certs:false};
+  done = new Set(); plan = new Map(); extra = {hours:false, certs:false};
   document.getElementById('req-hours').checked = false;
   document.getElementById('req-certs').checked = false;
   save(); paint(); renderAll(); focus(null);
@@ -1253,7 +1353,7 @@ window.APP = {
   },
   ready: id => ready(id),
   done: () => [...done],
-  plan: () => [...plan],
+  plan: () => [...plan.entries()],
   satisfied, isSeries, isMember, seriesOf, membersOf, seriesDone, seriesComplete,
   toggleDone, togglePlan,
   meetLabel, isOffered, DB, SERIES, SLOTS, TRACKS, GOALS, QI, QI_UNITS
