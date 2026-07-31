@@ -80,6 +80,10 @@
   }
   .add:hover{border-color:var(--accent);color:var(--accent)}
   .add.in{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);cursor:pointer}
+  .add:disabled,.add:disabled:hover{
+    opacity:.45;cursor:not-allowed;border-color:var(--rule);
+    background:var(--panel);color:var(--ink-3);
+  }
   .row.bad{background:#fdf1f1;margin:0 -10px;padding-left:10px;padding-right:10px}
   .warn-dot{color:var(--warn);font-size:11px;flex:none}
   .banner{
@@ -183,7 +187,7 @@
     <div class="sec">
       <h2>Ready to take now</h2>
       <div class="list" id="ready"></div>
-      <p class="note" style="margin:7px 0 0">Ranked by how much each course unblocks. The number is how many remaining courses toward the selected goal depend on it. <b>&#10003;</b> marks one done, <b>+</b> adds it to your plan.</p>
+      <p class="note" style="margin:7px 0 0">Everything whose prerequisites you've met, ranked by how much it unblocks. The number is how many remaining courses toward the selected goal depend on it. <b>&#10003;</b> marks one done, <b>+</b> adds it to your plan. Courses that don't run this term still appear — you may have taken them already — but <b>+</b> is greyed out.</p>
     </div>
     <div class="sec">
       <h2>My plan <span id="plan-count" class="tally"></span></h2>
@@ -452,9 +456,10 @@ function seriesBlock(sid){
         <span class="code">${statusMark(m)} ${m}</span>
         <span class="nm">${when}</span>
         <button class="add ${done.has(m)?'in':''}" data-done="${m}" title="${done.has(m)?'Mark not completed':'Mark completed'}">&#10003;</button>
-        ${runs && !done.has(m)
-          ? `<button class="add ${plan.has(m)?'in':''}" data-add="${m}" title="${plan.has(m)?'Remove from plan':'Add this part to plan'}">${plan.has(m)?'&minus;':'+'}</button>`
-          : ''}
+        ${done.has(m) ? ''
+          : runs
+            ? `<button class="add ${plan.has(m)?'in':''}" data-add="${m}" title="${plan.has(m)?'Remove from plan':'Add this part to plan'}">${plan.has(m)?'&minus;':'+'}</button>`
+            : `<button class="add" disabled title="Not offered ${TERM.label} — you can still mark it completed">+</button>`}
       </div>`;
     }).join('')}</div>
     <p class="note" style="margin:7px 0 0">All ${req} parts are required. Anything that needs ${sid} unlocks only when every part is complete.</p>`;
@@ -1000,7 +1005,10 @@ function renderGoals(){
 function rankedReady(){
   const s = scope();
   return Object.values(DB)
-    .filter(n => shown(n.id) && s.has(n.id) && !satisfied(n.id) && ready(n.id) && isOffered(n.id))
+    // Not offered this term does not mean unfinishable: a student may have
+    // taken it in an earlier term, so it still belongs here to be ticked off.
+    // What it cannot be is added to this term's plan.
+    .filter(n => shown(n.id) && s.has(n.id) && !satisfied(n.id) && ready(n.id))
     .map(n => ({ n, i:impact(n.id, s) }))
     .sort((a,b) =>
       b.i.count - a.i.count ||
@@ -1049,6 +1057,8 @@ function toggleDone(id){
 }
 
 function togglePlan(id){
+  // A course that doesn't run this term can be marked complete but not planned.
+  if(!plan.has(id) && !isOffered(id)) return;
   plan.has(id) ? plan.delete(id) : plan.add(id);
   save(); renderPlan(); renderReady(); renderDetail();
 }
@@ -1172,7 +1182,9 @@ function renderReady(){
         ${isSeries(n.id)
           ? `<button class="add" data-go="${n.id}" title="${membersOf(n.id).length} parts — open it to choose one">&rsaquo;</button>`
           : `<button class="add" data-done="${n.id}" title="Mark completed">&#10003;</button>
-             <button class="add ${plan.has(n.id)?'in':''}" data-add="${n.id}" title="${plan.has(n.id)?'Remove from plan':'Add to plan'}">${plan.has(n.id)?'&minus;':'+'}</button>`}
+             ${isOffered(n.id)
+               ? `<button class="add ${plan.has(n.id)?'in':''}" data-add="${n.id}" title="${plan.has(n.id)?'Remove from plan':'Add to plan'}">${plan.has(n.id)?'&minus;':'+'}</button>`
+               : `<button class="add" disabled title="Not offered ${TERM.label} — you can still mark it completed">+</button>`}`}
       </div>`).join('')
     : '<div class="empty">Nothing unlocked yet — start marking off what you\'ve finished.</div>';
   document.querySelectorAll('#ready [data-go]').forEach(el =>

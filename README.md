@@ -66,6 +66,10 @@ A `0` means nothing else is waiting on it — take it whenever it fits. A high n
 
 Each row carries two buttons: **✓** marks the course done, **+** adds it to your plan and becomes **−** to take it back out. Marking a course done drops it off this list and usually pushes new rows on, since finishing something is what unlocks the next thing.
 
+**Courses that don't run this term are still listed**, because not being offered now says nothing about whether you've already taken it. Their **+** is greyed out — you can't plan them for this term — but **✓** works normally. This is how you record something like CM100, which isn't on the Fall 2026 schedule but is a prerequisite for CM201: tick it off and CM201 opens up.
+
+A **series** — a course taken several times, like the five-part CL600 internship — shows a **›** instead. Open it to see the parts and pick one; see [Series](#series).
+
 ### Build a plan
 
 Click `+` on any ready course to add it to **My plan**. The detail panel also has an **Add to plan** button, which is how you add something you're taking with an override or alongside its prerequisite.
@@ -83,6 +87,18 @@ An amber ▲ next to a planned course means its prerequisites aren't marked comp
 Click any node. The graph dims to that course's lineage: prerequisites behind it in green, what it unlocks ahead in amber. The view zooms in far enough to stay readable, so long chains run off-screen — drag to follow, or click empty space to zoom back out.
 
 The right panel lists **Needs** and **Unlocks** with ✓ / ○ against each. Both are clickable, which is usually a faster way to walk a long chain than tracing it visually.
+
+### Series
+
+Some courses are taken more than once, each enrolment a separate course with its own units, its own meeting time and its own instructor. CL600 Practice Internship Level 1 is five of them; the programme requires all five. The others are CL310 (two), CL400 (three), CL700 and CL800 (four each), and the two qi sequences.
+
+On the graph a series is **one node**, labelled with its shape — `5 × 2 units` — rather than five nodes cluttering the clinical corner. Its parts have no nodes of their own.
+
+Open it for the parts. Each lists its own sections, instructor and mode, and carries its own **✓** and **+**, so you tick off and plan the specific one you're taking. The series itself has neither button: it can't be finished in a single click.
+
+**Anything requiring a series waits for every part.** CL700 does not open after one CL600 — it opens after the fifth. **Already done** reflects that with a running count, `CL600 · 3 of 5`, and **↺** there clears the whole series at once.
+
+Which courses form a series is written into the data, not guessed from the course code — see [Maintaining it for a future term](#maintaining-it-for-a-future-term).
 
 ### Browse or search the course list
 
@@ -162,6 +178,20 @@ The data is split by how often it changes, and `index.html` holds no course fact
 ```
 
 `pre` is hard prerequisites, `co` is corequisites the schedule allows concurrently, `anyOf` is groups where any one member counts (`"anyOf": [["CL310", "CL400"]]`), and `flags` names non-course requirements. Omit any of them when empty. Also holds `tracks` (ids and names — the colours are presentation and live in `index.html`), `goals`, and `requirements`.
+
+**Series** are declared in a `series` block, never inferred from the shape of a course code:
+
+```json
+"series": {
+  "CL600": { "title": "Practice Internship Lv 1", "track": "cl", "required": 5,
+             "members": ["CL600A", "CL600B", "CL600C", "CL600D", "CL600E"],
+             "pre": ["EX210", "CL100", "…"], "flags": ["hours", "certs", "qi"] }
+}
+```
+
+Members are ordinary courses carrying `"series": "CL600"`. Prerequisites live on the series and are inherited, and everything else references the series id, never a member.
+
+It has to be declared because no rule over course codes works. CL600A–E carry a trailing letter; the qi sequences don't — they run QC130/QC131 and QC150/QC151/QC152. And a `-1` / `-2` in a term schedule means *another opening of one course*, not a series: AC201-1 and AC201-2 are one course you take once. When transcribing, the curriculum letter and the schedule suffix line up — `A` is `-1`, `B` is `-2` — so the schedule's `CL600-3` is written `CL600C`.
 
 **`data/classes-<term>.json`** — the open classes: what actually runs, and when. This is the file you rewrite each term, and it says nothing about prerequisites. One entry per section, because instructor and delivery mode belong to a section rather than a course:
 
