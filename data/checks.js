@@ -47,7 +47,9 @@ function checkData(curriculum, classes) {
 
   Object.entries(courses).forEach(([id, c]) => {
     if (!c.title || !String(c.title).trim()) err('title', `${id} has no title`);
-    if (!Number.isInteger(c.units) || c.units <= 0) err('units', `${id} has units ${JSON.stringify(c.units)}, expected a positive integer`);
+    // Zero is legitimate: the benchmark exams and the CPR/CNT requirements are
+    // real enrolments that carry no credit.
+    if (!Number.isInteger(c.units) || c.units < 0) err('units', `${id} has units ${JSON.stringify(c.units)}, expected a whole number of zero or more`);
     if (!tracks[c.track]) err('track', `${id} is on track "${c.track}", which is not declared`);
 
     (c.pre || []).forEach(p => { if (!knownRef(p)) err('dangling', `${id} requires ${p}, which is not in the curriculum`); });

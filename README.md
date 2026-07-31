@@ -51,10 +51,12 @@ Four options in the top left. Each filters the graph down to just what that goal
 
 | Goal | Requires | Units |
 |---|---|---|
-| Whole program | 84 entries — 77 courses and 7 series | 197 |
+| Whole program | 84 entries — 77 courses and 7 series | 193 |
 | First Comprehensive (EX100) | 14 | 38 |
 | Pre-clinical exams (EX210 / EX220) | 23 | 62 |
-| Graduation Exam (EX300) | 38 | 116 |
+| Graduation Exam (EX300) | 38 | 114 |
+
+Benchmark exams carry no units. The 1 and 2 printed beside them on the schedule are the two sittings offered each term, not credit.
 
 A series counts as one entry carrying all its units, so CL600 is one line worth 10 rather than five lines worth 2. That is where the Graduation Exam's figure comes from: the three internship levels alone are 26 of its 116 units.
 

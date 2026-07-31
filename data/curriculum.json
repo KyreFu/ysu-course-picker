@@ -22,7 +22,7 @@
   "_notesNote": "Shown to students in the 'About this data' panel. Say what the model does and where the sources disagree, so nobody has to guess whether something is a bug.",
 
   "notes": [
-    "EX210 and EX220 appear as one entry: same prerequisites, taken the same term, units combined.",
+    "EX210 and EX220 appear as one entry: same prerequisites, taken the same term. Benchmark exams carry no units; the 1 and 2 on the schedule are the two sittings offered each term, not credit.",
     "The Graduation Exam accepts WM360 or WM361. WM360 is named in the schedule's prerequisite key but appears nowhere in the university's curriculum listing, so only WM361 is modelled. If you took WM360, mark WM361 complete.",
     "Where a requirement offers a choice — 'one of CL310 or CL400' — the goal totals count every option, so units and course counts read a little high.",
     "QC130 and QC150 are in the curriculum but are not counted toward the 4-unit qi cultivation requirement. The schedule's foundation list names six other courses, and it is not settled whether these count as well.",
@@ -175,9 +175,9 @@
     "QC152": { "title": "Dao-In Qigong (3 of 3)", "units": 1, "track": "tq", "series": "QC150x3" },
     "EL346": { "title": "Yang Style Tai Chi", "units": 1, "track": "tq" },
     "EL357": { "title": "Chen Style Tai Chi Sword", "units": 1, "track": "tq" },
-    "EX100": { "title": "First Comprehensive Exam", "units": 1, "track": "ex", "pre": ["CM111", "CM112", "HM110", "HM120", "HM130", "AC201", "AC202", "AC203", "WM151", "WM152", "WM153"] },
-    "EX210": { "title": "Pre-clinical exams (EX210 · EX220)", "units": 2, "track": "ex", "pre": ["AC201", "AC202", "AC203", "AC301", "AC302", "AC310", "CM201", "CM202", "WM211", "WM212", "WM310", "WM220", "CL100"] },
-    "EX300": { "title": "Graduation Exam", "units": 1, "track": "ex", "pre": ["EX210", "WM361", "WM330", "WM431", "CL600"] },
+    "EX100": { "title": "First Comprehensive Exam", "units": 0, "track": "ex", "pre": ["CM111", "CM112", "HM110", "HM120", "HM130", "AC201", "AC202", "AC203", "WM151", "WM152", "WM153"] },
+    "EX210": { "title": "Pre-clinical exams (EX210 · EX220)", "units": 0, "track": "ex", "pre": ["AC201", "AC202", "AC203", "AC301", "AC302", "AC310", "CM201", "CM202", "WM211", "WM212", "WM310", "WM220", "CL100"] },
+    "EX300": { "title": "Graduation Exam", "units": 0, "track": "ex", "pre": ["EX210", "WM361", "WM330", "WM431", "CL600"] },
     "PD340": { "title": "Research", "units": 1, "track": "pd", "pre": ["CL100"] },
     "PD350": { "title": "Taoist Acupuncture", "units": 1, "track": "pd", "pre": ["AC201", "AC202", "AC203"] },
     "PD410": { "title": "Integrative Medicine I", "units": 1, "track": "pd", "co": ["CL700"] },
