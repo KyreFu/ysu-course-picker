@@ -141,6 +141,12 @@ function checkData(curriculum, classes) {
   if (!goals.some(g => g.id === 'ALL')) warn('goal', 'no "ALL" goal, so there is no way to see the whole programme');
 
   // --- open classes -------------------------------------------------------
+  const src = (classes && classes.source) || {};
+  if (!src.document) warn('source', 'the class file does not name the document it was transcribed from');
+  if (src.url && !/^https?:\/\//i.test(String(src.url)))
+    err('source', `source.url is "${src.url}", which is not an http or https address`);
+  if (!src.url) warn('source', 'the class file has no source.url, so students cannot open the schedule it came from');
+
   let missingInstructor = 0, missingMode = 0;
 
   Object.entries(offered).forEach(([id, sections]) => {

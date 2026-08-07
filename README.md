@@ -161,7 +161,9 @@ Nothing is hidden by this. **Needs** in the detail panel lists every requirement
 
 ## What the tool tells you about its own data
 
-The right panel ends with **About this data**, headed by the exact document the figures come from — *Fall 2026 Course Schedule, v2, 2026-07-24*. Under it is every modelling decision and every known disagreement between sources, in plain language: which entries are merged, where the sources contradict each other, and what isn't modelled at all.
+The right panel ends with **About this data**, headed by the exact document the figures come from — *Fall 2026 Course Schedule, v3, 2026-07-31* — as a link straight to that schedule, so anyone can check a figure against the source in one click. Under it is every modelling decision and every known disagreement between sources, in plain language: which entries are merged, where the sources contradict each other, and what isn't modelled at all.
+
+The link comes from `source.url` in the class file. Only `http` and `https` addresses become links; anything else is shown as plain text rather than trusted as a destination.
 
 These notes live in the data, not in the page. `curriculum.json` carries a `notes` array for things true of the programme, and each class file carries one for things true of that term. Whoever updates the data owns what the tool admits to.
 
