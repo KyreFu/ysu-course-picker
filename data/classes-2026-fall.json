@@ -2,12 +2,13 @@
   "schemaVersion": 1,
   "term": "2026-fall",
   "label": "Fall 2026",
-  "_comment": "Open classes: what runs this term, and when. One entry per section. Delivery mode follows the schedule's own legend: everything is in person on campus except rows marked with the laptop glyph, which are delivered via Zoom. Exams and the two herb labs have no instructor listed on the schedule.",
+  "_comment": "Open classes: what runs this term, and when. One entry per section. Delivery mode follows the schedule's own legend: everything is in person on campus except rows marked with the laptop glyph, which are delivered via Zoom. A null instructor means the schedule prints none.",
   "source": {
     "document": "Fall 2026 Course Schedule",
-    "version": 2,
-    "dated": "2026-07-24",
-    "publisher": "yosan.edu"
+    "version": 3,
+    "dated": "2026-07-31",
+    "publisher": "yosan.edu",
+    "url": "https://yosan.edu/wp-content/uploads/2023/04/Course-Schedule-Fall-2026.pdf"
   },
 
   "notes": [
@@ -115,7 +116,10 @@
     "CL800C": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
     "CL800D": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
     "CL880": [{ "section": "1", "meetings": [], "instructor": "Luca", "mode": "in-person" }],
-    "CL611": [{ "section": "1", "meetings": [{ "day": "W", "start": "10a", "end": "12p" }], "instructor": "Berletich", "mode": "online" }],
+    "CL611": [
+      { "section": "1", "meetings": [{ "day": "W", "start": "10a", "end": "12p" }], "instructor": "Berletich", "mode": "online" },
+      { "section": "2", "meetings": [{ "day": "Th", "start": "9:30a", "end": "11:30a" }], "instructor": "Yamamoto", "mode": "in-person" }
+    ],
     "CL711": [{ "section": "1", "meetings": [{ "day": "Tu", "start": "9a", "end": "12p" }], "instructor": "Lin", "mode": "online" }],
     "CL811": [{ "section": "1", "meetings": [{ "day": "M", "start": "12p", "end": "3p" }], "instructor": "Westhauser", "mode": "online" }],
 

@@ -73,6 +73,8 @@
   }
   .mini:hover{border-color:var(--accent);color:var(--accent)}
   .tally{font-size:11px;color:var(--ink-3);font-weight:400;letter-spacing:0;text-transform:none}
+  .tally a{color:var(--accent);text-decoration:none;border-bottom:1px solid transparent}
+  .tally a:hover{border-bottom-color:var(--accent)}
   .pick{
     flex:1;min-width:0;max-width:60%;font:inherit;font-size:11px;
     padding:1px 3px;border:1px solid var(--rule-2);border-radius:5px;
@@ -159,6 +161,12 @@
   .notes{font-size:12px;color:var(--ink-3);line-height:1.5;margin:0;padding-left:15px}
   .notes li{margin-bottom:6px}
   .notes li:last-child{margin-bottom:0}
+  .flag{
+    display:inline-block;font-size:9.5px;font-weight:600;text-transform:uppercase;
+    letter-spacing:.05em;padding:1px 5px;border-radius:3px;vertical-align:1px;
+    background:var(--warn-soft);border:1px solid #e6d3ab;color:var(--warn);
+  }
+  .flag.ok{background:var(--accent-soft);border-color:#9FE1CB;color:#04342C}
   .tick{color:var(--accent);font-weight:600}
   .cross{color:var(--ink-3)}
   @media (max-width:900px){
@@ -481,7 +489,13 @@ function sectionTime(s){
   const ms = s.meetings || [];
   return ms.length ? ms.map(m => `${m.day} ${m.start}-${m.end}`).join(', ') : 'time arranged';
 }
+function isExternal(id){
+  const c = (CURRICULUM.courses || {})[id];
+  return !!(c && c.external);
+}
 function meetLabel(id){
+  // Not offered and never offered here are different things worth saying apart.
+  if(isExternal(id)) return 'taken outside Yo San';
   if(!isOffered(id)) return 'not offered this term';
   const timed = (SECTIONS[id] || []).filter(s => (s.meetings||[]).length);
   return timed.length ? timed.map(sectionTime).join(' | ') : 'time arranged';
@@ -791,7 +805,7 @@ function impact(id, s){
 const els = [];
 Object.values(DB).filter(n => shown(n.id)).forEach(n => {
   const parts = isSeries(n.id) ? membersOf(n.id).length : 0;
-  const size = parts ? `${parts} × ${DB[membersOf(n.id)[0]].units} units` : `${n.units} unit${n.units>1?'s':''}`;
+  const size = parts ? `${parts} × ${DB[membersOf(n.id)[0]].units} units` : `${n.units} unit${n.units===1?'':'s'}`;
   els.push({ data:{ id:n.id, track:n.track, offered: isOffered(n.id) ? 1 : 0,
     label:`${n.id}\n${n.title}\n${isOffered(n.id) ? size : 'not this term'}` }});
 });
@@ -964,7 +978,7 @@ function renderBrowse(){
   box.innerHTML = list.length
     ? list.map(n => `<div class="row" data-go="${n.id}">
         <span class="code">${browseMark(n.id)} ${n.id}</span>
-        <span class="nm">${isOffered(n.id) ? esc(n.title) : `${esc(n.title)} · not this term`}</span>
+        <span class="nm">${isOffered(n.id) ? esc(n.title) : `${esc(n.title)} · ${isExternal(n.id) ? 'outside YSU' : 'not this term'}`}</span>
       </div>`).join('')
     : `<div class="empty">${query
         ? 'Nothing matches inside this goal — try the Whole program goal.'
@@ -1003,10 +1017,10 @@ function renderDetail(){
     <button class="lnk" id="back" style="margin-bottom:10px">&larr; All courses</button>
     <h2>Course detail</h2>
     <h3>${n.id} · ${esc(n.title)}</h3>
-    <div class="dsub">${n.units} unit${n.units>1?'s':''} · ${esc(meetLabel(n.id))}</div>
+    <div class="dsub">${n.units} unit${n.units===1?'':'s'} · ${esc(meetLabel(n.id))}</div>
     <span class="pill" style="background:${t.bg};border-color:${t.line};color:${t.ink}">${esc(t.name)}</span>
     ${done.has(n.id) ? '<span class="pill" style="background:#e1f5ee;border-color:#0f6e56;color:#04342C">completed</span>'
-      : !isOffered(n.id) ? `<span class="pill" style="background:#f2f3f1;border-color:#cdd1cd;color:#5c6a68">not offered ${esc(TERM.label)}</span>`
+      : !isOffered(n.id) ? `<span class="pill" style="background:#f2f3f1;border-color:#cdd1cd;color:#5c6a68">${isExternal(n.id) ? 'taken outside Yo San' : `not offered ${esc(TERM.label)}`}</span>`
       : ready(n.id) ? '<span class="pill" style="background:#e1f5ee;border-color:#0f6e56;color:#04342C">ready to take</span>'
       : '<span class="pill" style="background:#faeeda;border-color:#BA7517;color:#412402">blocked</span>'}
     ${isSeries(n.id) ? '' : `<div style="margin:12px 0;display:flex;gap:7px">
@@ -1331,14 +1345,28 @@ function renderReady(){
 /* Everything the app knows about its own limits comes from the data files, so
    this panel cannot drift out of date the way hand-written caveats do. */
 function renderNotes(){
-  const notes = [...(CURRICULUM.notes || []), ...(TERM.notes || [])];
+  /* A note is either a plain string or { text, status }. "unconfirmed" marks a
+     reading the university has not yet confirmed — worth telling a student
+     apart from settled fact, rather than burying it in the wording. */
+  const notes = [...(CURRICULUM.notes || []), ...(TERM.notes || [])]
+    .map(n => typeof n === 'string' ? { text:n } : (n || {}));
   const box = document.getElementById('data-notes');
+  const badge = s => s === 'unconfirmed' ? '<span class="flag">unconfirmed</span> '
+                   : s === 'confirmed' ? '<span class="flag ok">confirmed</span> ' : '';
   box.innerHTML = notes.length
-    ? `<ul class="notes">${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>`
+    ? `<ul class="notes">${notes.map(n =>
+        `<li>${badge(n.status)}${esc(n.text)}</li>`).join('')}</ul>`
     : '<p class="note">No notes recorded for this data.</p>';
   const s = TERM.source || {};
-  document.getElementById('notes-src').textContent =
-    s.document ? `${s.document}${s.version ? `, v${s.version}` : ''}${s.dated ? `, ${s.dated}` : ''}` : '';
+  const cite = s.document
+    ? `${s.document}${s.version ? `, v${s.version}` : ''}${s.dated ? `, ${s.dated}` : ''}` : '';
+  // Link to the source only if it is a real web address. Anything else in that
+  // field is shown as plain text rather than trusted as a destination.
+  const href = /^https?:\/\//i.test(String(s.url || '')) ? s.url : null;
+  document.getElementById('notes-src').innerHTML = !cite ? ''
+    : href ? `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer"
+                 title="Open the schedule this data was read from">${esc(cite)} &#8599;</a>`
+           : esc(cite);
 }
 
 function renderLegend(){
@@ -1400,7 +1428,7 @@ window.APP = {
   plan: () => [...plan.entries()],
   satisfied, isSeries, isMember, seriesOf, membersOf, seriesDone, seriesComplete,
   toggleDone, togglePlan,
-  meetLabel, isOffered, DB, SERIES, SLOTS, TRACKS, GOALS, QI, QI_UNITS
+  meetLabel, isOffered, renderNotes, DB, SERIES, SLOTS, TRACKS, GOALS, QI, QI_UNITS
 };
 
 // The term the data describes, stated in the UI so a stale copy is obvious.

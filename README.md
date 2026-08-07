@@ -51,10 +51,12 @@ Four options in the top left. Each filters the graph down to just what that goal
 
 | Goal | Requires | Units |
 |---|---|---|
-| Whole program | 84 entries — 77 courses and 7 series | 197 |
+| Whole program | 86 entries — 79 courses and 7 series | 194 |
 | First Comprehensive (EX100) | 14 | 38 |
 | Pre-clinical exams (EX210 / EX220) | 23 | 62 |
-| Graduation Exam (EX300) | 38 | 116 |
+| Graduation Exam (EX300) | 38 | 114 |
+
+Benchmark exams carry no units. The 1 and 2 printed beside them on the schedule are the two sittings offered each term, not credit.
 
 A series counts as one entry carrying all its units, so CL600 is one line worth 10 rather than five lines worth 2. That is where the Graduation Exam's figure comes from: the three internship levels alone are 26 of its 116 units.
 
@@ -159,7 +161,15 @@ Nothing is hidden by this. **Needs** in the detail panel lists every requirement
 
 ## What the tool tells you about its own data
 
-The right panel ends with **About this data**, headed by the exact document the figures come from — *Fall 2026 Course Schedule, v2, 2026-07-24*. Under it is every modelling decision and every known disagreement between sources, in plain language: which entries are merged, where the sources contradict each other, and what isn't modelled at all.
+The right panel ends with **About this data**, headed by the exact document the figures come from — *Fall 2026 Course Schedule, v3, 2026-07-31* — as a link straight to that schedule, so anyone can check a figure against the source in one click. Under it is every modelling decision and every known disagreement between sources, in plain language: which entries are merged, where the sources contradict each other, and what isn't modelled at all.
+
+The link comes from `source.url` in the class file. Only `http` and `https` addresses become links; anything else is shown as plain text rather than trusted as a destination.
+
+A note may carry a status. **Confirmed** means the university has answered; **unconfirmed** means it's our reading and still with them. That distinction is shown to students, so a figure resting on an unconfirmed assumption is visibly different from a settled one:
+
+```json
+{ "text": "Benchmark exams are recorded as carrying no units …", "status": "unconfirmed" }
+```
 
 These notes live in the data, not in the page. `curriculum.json` carries a `notes` array for things true of the programme, and each class file carries one for things true of that term. Whoever updates the data owns what the tool admits to.
 
