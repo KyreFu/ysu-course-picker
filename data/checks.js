@@ -47,9 +47,10 @@ function checkData(curriculum, classes) {
 
   Object.entries(courses).forEach(([id, c]) => {
     if (!c.title || !String(c.title).trim()) err('title', `${id} has no title`);
-    // Zero is legitimate: the benchmark exams and the CPR/CNT requirements are
-    // real enrolments that carry no credit.
-    if (!Number.isInteger(c.units) || c.units < 0) err('units', `${id} has units ${JSON.stringify(c.units)}, expected a whole number of zero or more`);
+    // Zero is legitimate - the benchmark exams may carry no credit - and so are
+    // halves: CPR and CNT are half a unit each.
+    if (typeof c.units !== 'number' || !isFinite(c.units) || c.units < 0)
+      err('units', `${id} has units ${JSON.stringify(c.units)}, expected a number of zero or more`);
     if (!tracks[c.track]) err('track', `${id} is on track "${c.track}", which is not declared`);
 
     (c.pre || []).forEach(p => { if (!knownRef(p)) err('dangling', `${id} requires ${p}, which is not in the curriculum`); });
@@ -141,6 +142,17 @@ function checkData(curriculum, classes) {
   if (!goals.some(g => g.id === 'ALL')) warn('goal', 'no "ALL" goal, so there is no way to see the whole programme');
 
   // --- open classes -------------------------------------------------------
+  // Notes may be a plain string or { text, status }.
+  [['curriculum', (curriculum && curriculum.notes) || []],
+   ['class file', (classes && classes.notes) || []]].forEach(([where, list]) => {
+    list.forEach((n, i) => {
+      const o = typeof n === 'string' ? { text: n } : (n || {});
+      if (!o.text || !String(o.text).trim()) err('note', `${where} note ${i + 1} has no text`);
+      if (o.status && !['confirmed', 'unconfirmed'].includes(o.status))
+        err('note', `${where} note ${i + 1} has status "${o.status}"; expected confirmed or unconfirmed`);
+    });
+  });
+
   const src = (classes && classes.source) || {};
   if (!src.document) warn('source', 'the class file does not name the document it was transcribed from');
   if (src.url && !/^https?:\/\//i.test(String(src.url)))

@@ -22,11 +22,21 @@
   "_notesNote": "Shown to students in the 'About this data' panel. Say what the model does and where the sources disagree, so nobody has to guess whether something is a bug.",
 
   "notes": [
-    "EX210 and EX220 appear as one entry: same prerequisites, taken the same term. Benchmark exams carry no units; the 1 and 2 on the schedule are the two sittings offered each term, not credit.",
-    "The Graduation Exam accepts WM360 or WM361. WM360 is named in the schedule's prerequisite key but appears nowhere in the university's curriculum listing, so only WM361 is modelled. If you took WM360, mark WM361 complete.",
-    "Where a requirement offers a choice — 'one of CL310 or CL400' — the goal totals count every option, so units and course counts read a little high.",
-    "QC130 and QC150 are in the curriculum but are not counted toward the 4-unit qi cultivation requirement. The schedule's foundation list names six other courses, and it is not settled whether these count as well.",
-    "The university's advising tool lists more courses for the Comprehensive and Pre-clinical exams than the schedule's prerequisite key does. These figures follow the key, which is the source cited below."
+    { "text": "WM361 Integrative Pharmacology replaces WM360 Western Pharmacology, which is retired. If you took WM360, mark WM361 complete.", "status": "confirmed" },
+
+    { "text": "CPR & First Aid (WM381) and Clean Needle Technique (WM382) are half a unit each and are taken outside Yo San. Present the certificate of completion and they are added to your transcript. They are listed here so they can be recorded, but the tool tracks the requirement itself through the CPR / first aid / CNT checkbox.", "status": "confirmed" },
+
+    { "text": "Whether HM210, HM220 and HM230 are required before the practice internships is with the academic team. The tool follows the schedule's prerequisite key, which does not require them. The university's advising tool does.", "status": "unconfirmed" },
+
+    { "text": "Benchmark exams are recorded as carrying no units, on the reading that the 1 and 2 printed beside each one are its two sittings rather than credit. Not yet confirmed. If they do carry credit, every unit total that includes an exam is low.", "status": "unconfirmed" },
+
+    { "text": "QC150 Dao-In level 1 and QC252 Dao-In level 3 are different courses, not duplicates, and the level prerequisite may be waived so a student can start at level 3. The numbering is still odd: a level-3 course numbered 252 sits oddly beside a level-1 course numbered 150, and the QC150 series may have been renumbered without new classes being created.", "status": "unconfirmed" },
+
+    { "text": "QC130 and QC150 are in the curriculum but are not counted toward the 4-unit qi cultivation requirement. The schedule's foundation list names six other courses, and whether these count as well is unsettled.", "status": "unconfirmed" },
+
+    "EX210 and EX220 appear as one entry: same prerequisites, taken the same term.",
+
+    "Where a requirement offers a choice — 'one of CL310 or CL400' — the goal totals count every option, so units and course counts read a little high."
   ],
 
   "goals": [
@@ -129,6 +139,8 @@
     "WM340": { "title": "Mental Wellness & Patient Care Psych.", "units": 2, "track": "wm", "pre": ["WM160"], "anyOf": [["CL310", "CL400"]] },
     "WM361": { "title": "Integrative Pharmacology", "units": 3, "track": "wm", "pre": ["WM130", "WM211", "WM212"] },
     "WM370": { "title": "Biomedical Acupuncture", "units": 1, "track": "wm" },
+    "WM381": { "title": "CPR & First Aid", "units": 0.5, "track": "wm", "external": true },
+    "WM382": { "title": "Clean Needle Technique", "units": 0.5, "track": "wm", "external": true },
     "WM420": { "title": "Principles of Public Health", "units": 2, "track": "wm", "pre": ["WM211", "WM212"], "anyOf": [["CL310", "CL400"]] },
     "WM431": { "title": "Healthcare Law & Ethics", "units": 1, "track": "wm", "anyOf": [["CL700", "CL800"]] },
     "WM432": { "title": "Healthcare Business Management", "units": 2, "track": "wm", "co": ["CL600"] },
