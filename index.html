@@ -17,6 +17,8 @@
     --accent-soft:#e1f5ee;
     --warn:#854f0b;
     --warn-soft:#faeeda;
+    --left-w:310px;
+    --right-w:330px;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -35,10 +37,23 @@
   main{flex:1;display:flex;min-height:0}
   #cy{flex:1;background:var(--panel);min-width:0}
   aside{
-    width:330px;flex:none;border-left:1px solid var(--rule);background:var(--panel);
+    width:var(--right-w);flex:none;background:var(--panel);
     overflow-y:auto;padding:16px 18px 40px;
   }
-  aside.left{border-left:none;border-right:1px solid var(--rule);width:310px}
+  aside.left{width:var(--left-w)}
+
+  /* Drag handle between a panel and the graph. The bar is 9px wide so it is
+     easy to grab, but negative margins keep it 1px wide in the layout, so it
+     reads as the same hairline divider the panels used to draw themselves. */
+  .grip{
+    flex:none;width:9px;margin:0 -4px;position:relative;z-index:3;
+    cursor:col-resize;background:transparent;touch-action:none;
+  }
+  .grip::before{
+    content:'';position:absolute;top:0;bottom:0;left:4px;width:1px;
+    background:var(--rule);transition:background .12s,width .12s;
+  }
+  .grip:hover::before,.grip.drag::before{background:var(--accent);width:3px;left:3px}
   .sec{margin-bottom:22px}
   .sec h2{
     font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;
@@ -179,6 +194,7 @@
       border:none;border-top:1px solid var(--rule);
     }
     #cy{flex:none;height:60vh}
+    .grip{display:none}
   }
 </style>
 </head>
@@ -232,7 +248,9 @@
     </div>
   </aside>
 
+  <div class="grip" data-grip="left" role="separator" aria-orientation="vertical" title="Drag to resize. Double-click to reset."></div>
   <div id="cy"></div>
+  <div class="grip" data-grip="right" role="separator" aria-orientation="vertical" title="Drag to resize. Double-click to reset."></div>
 
   <aside>
     <div class="sec">
@@ -1380,7 +1398,111 @@ function renderLegend(){
     `<span class="lg" style="background:${t.bg};border-color:${t.line};color:${t.ink}">${esc(t.name)}</span>`).join('');
 }
 
-function renderAll(){ renderGoals(); renderCompleted(); renderReady(); renderPlan(); renderDetail(); }
+/* Panel widths. Kept under their own storage key, not in saved progress: they
+   are a per-screen preference, and a backup file should not carry them. */
+const LAYOUT_KEY = 'ysu-prereq-layout';
+const DEFAULT_LAYOUT = { left:310, right:330 };
+const MIN_PANEL = 190, MIN_GRAPH = 220;
+let layout = { ...DEFAULT_LAYOUT };
+
+/* What actually fits right now. This never writes back to `layout`, so a window
+   narrow enough to squeeze the panels does not destroy the width you chose —
+   widen it again and your panels come back. */
+function fittedLayout(){
+  let left = Math.max(MIN_PANEL, layout.left);
+  let right = Math.max(MIN_PANEL, layout.right);
+  const total = document.querySelector('main').clientWidth || 0;
+  if(total){
+    let over = left + right + MIN_GRAPH - total;
+    while(over > 0){
+      const takeLeft = left >= right;
+      const give = Math.min(over, (takeLeft ? left : right) - MIN_PANEL);
+      if(give <= 0) break;                       // both already at the floor
+      if(takeLeft) left -= give; else right -= give;
+      over -= give;
+    }
+  }
+  return { left, right };
+}
+function applyLayout(){
+  const fit = fittedLayout();
+  const r = document.documentElement.style;
+  r.setProperty('--left-w', fit.left + 'px');
+  r.setProperty('--right-w', fit.right + 'px');
+}
+// Dragging is explicit, so it does write back — but only as far as will fit.
+function clampLayout(){
+  const fit = fittedLayout();
+  layout.left = fit.left;
+  layout.right = fit.right;
+}
+function loadLayout(){
+  try{
+    const o = JSON.parse(localStorage.getItem(LAYOUT_KEY) || 'null');
+    if(o && Number.isFinite(o.left) && Number.isFinite(o.right)) layout = { left:o.left, right:o.right };
+  }catch(e){ /* a bad or blocked entry just means default widths */ }
+}
+function saveLayout(){
+  try{ localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout)); }catch(e){}
+}
+
+/* A name too long for its column is ellipsised. Rather than guess which ones,
+   ask the browser after each render and give exactly those a tooltip, so the
+   full title is readable without resizing anything. */
+function markOverflow(){
+  document.querySelectorAll('.row .nm, .row .code').forEach(el => {
+    if(el.scrollWidth > el.clientWidth + 1) el.title = el.textContent.trim();
+    else if(el.title && !el.dataset.keepTitle) el.removeAttribute('title');
+  });
+}
+
+function setupGrips(){
+  document.querySelectorAll('.grip').forEach(grip => {
+    const side = grip.getAttribute('data-grip');
+
+    grip.addEventListener('pointerdown', e => {
+      if(narrow()) return;
+      e.preventDefault();
+      const startX = e.clientX, startW = layout[side];
+      grip.setPointerCapture(e.pointerId);
+      grip.classList.add('drag');
+      document.body.style.userSelect = 'none';
+      let queued = false;
+
+      const move = ev => {
+        const dx = ev.clientX - startX;
+        layout[side] = startW + (side === 'left' ? dx : -dx);
+        clampLayout();
+        applyLayout();
+        if(!queued){                       // keep the canvas in step, once a frame
+          queued = true;
+          requestAnimationFrame(() => { queued = false; cy.resize(); });
+        }
+      };
+      const up = ev => {
+        grip.releasePointerCapture(ev.pointerId);
+        grip.classList.remove('drag');
+        document.body.style.userSelect = '';
+        grip.removeEventListener('pointermove', move);
+        grip.removeEventListener('pointerup', up);
+        grip.removeEventListener('pointercancel', up);
+        saveLayout(); cy.resize(); markOverflow();
+      };
+      grip.addEventListener('pointermove', move);
+      grip.addEventListener('pointerup', up);
+      grip.addEventListener('pointercancel', up);
+    });
+
+    grip.addEventListener('dblclick', () => {
+      layout[side] = DEFAULT_LAYOUT[side];
+      clampLayout(); applyLayout(); saveLayout(); cy.resize(); markOverflow();
+    });
+  });
+
+  addEventListener('resize', () => { applyLayout(); cy.resize(); markOverflow(); });
+}
+
+function renderAll(){ renderGoals(); renderCompleted(); renderReady(); renderPlan(); renderDetail(); markOverflow(); }
 
 cy.on('tap','node', e => {
   if(e.originalEvent && e.originalEvent.altKey){ toggleDone(e.target.id()); return; }
@@ -1434,7 +1556,8 @@ window.APP = {
   plan: () => [...plan.entries()],
   satisfied, isSeries, isMember, seriesOf, membersOf, seriesDone, seriesComplete,
   toggleDone, togglePlan,
-  meetLabel, isOffered, renderNotes, DB, SERIES, SLOTS, TRACKS, GOALS, QI, QI_UNITS
+  meetLabel, isOffered, renderNotes, markOverflow, clampLayout, applyLayout,
+  layoutOf: () => ({ ...layout }), setLayout: l => { layout = { ...l }; clampLayout(); applyLayout(); cy.resize(); }, DB, SERIES, SLOTS, TRACKS, GOALS, QI, QI_UNITS
 };
 
 // The term the data describes, stated in the UI so a stale copy is obvious.
@@ -1447,6 +1570,7 @@ document.getElementById('req-hours').checked = extra.hours;
 document.getElementById('req-certs').checked = extra.certs;
 document.getElementById('lbl-hours').textContent = reqLabel('hours');
 document.getElementById('lbl-certs').textContent = reqLabel('certs');
+loadLayout(); applyLayout(); setupGrips();
 renderLegend();
 renderNotes();
 applyGoal();

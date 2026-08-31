@@ -82,6 +82,18 @@ Click `+` on any ready course to add it to **My plan**. The detail panel also ha
 
 The plan checks for time conflicts and shows a week grid of the result. Conflict detection is section-aware: CM112 and AC301 both meet Monday at 9, but AC301 has a noon section, so that's not a conflict and the grid shows you the combination that works. Add HM320 — also Monday 9a, one section only — and it flags the unavoidable pair by name.
 
+### Resizing the panels
+
+Both side panels have a divider you can drag. Long course titles are the reason: at the default widths a name like *Herbal Patents & Ext. Medicines* runs out of room and is cut off with an ellipsis, and previously the only way to read it was to click through to the graph.
+
+Drag either divider to give a panel as much width as you want; the graph takes what's left, down to a floor of 220px, and no panel goes below 190px. Double-click a divider to put that side back to its default.
+
+Your widths are remembered per browser, under their own storage key — they're a screen preference, not progress, so they never appear in a backup file and restoring a backup won't change them.
+
+Narrowing the window squeezes the panels to fit, but doesn't forget what you chose: widen it again and they come back. Below 900px the panels stack and the dividers disappear.
+
+**You may not need to resize at all.** Any name too long for its column now carries a tooltip with the full text, so hovering reveals it. That's computed per render from what's actually cut off, so it only appears where it's needed.
+
 ### Choosing a section
 
 Where a course has more than one opening, the plan row carries a dropdown listing them by time and instructor — *M 3p-6p · Deng* or *Th 9a-12p · Garcia*. Where the schedule prints a part-term range, that appears too, which is how two sections sharing a time are told apart: CL811 runs *wks 1-6* and *wks 7-11*, both Monday at noon. You can also pick straight from the course detail, where each section shows its own **+**.
