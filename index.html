@@ -116,13 +116,16 @@
     opacity:.45;cursor:not-allowed;border-color:var(--rule);
     background:var(--panel);color:var(--ink-3);
   }
-  .row.bad{background:#fdf1f1;margin:0 -10px;padding-left:10px;padding-right:10px}
+  .row.bad{background:var(--warn-soft);margin:0 -10px;padding-left:10px;padding-right:10px}
   .warn-dot{color:var(--warn);font-size:11px;flex:none}
   .banner{
     margin-top:8px;padding:7px 10px;border-radius:7px;font-size:12.5px;border:1px solid;
   }
   .banner.ok{background:var(--accent-soft);border-color:#9FE1CB;color:#04342C}
-  .banner.no{background:#FCEBEB;border-color:#F09595;color:#501313}
+  .banner.warn{background:var(--warn-soft);border-color:#e6d3ab;color:#5b3707}
+  .banner .foot{margin-top:6px;font-size:11.5px;opacity:.85}
+  .banner li{margin-bottom:3px}
+  .banner li:last-child{margin-bottom:0}
   .banner ul{margin:5px 0 0;padding-left:16px}
   .wk{margin-top:10px;border:1px solid var(--rule);border-radius:7px;overflow:hidden;display:none}
   .wk.on{display:block}
@@ -144,7 +147,8 @@
   }
   /* inset so it doesn't fight the red outline on a clashing block */
   .blk:hover{box-shadow:inset 0 0 0 1.5px currentColor}
-  .blk.clash{outline:1.5px solid #E24B4A;outline-offset:-1px;z-index:2}
+  /* amber, not red: a shared slot is worth a look, not an error */
+  .blk.clash{outline:1.5px solid #BA7517;outline-offset:-1px;z-index:2}
   .chk{display:flex;align-items:flex-start;gap:8px;font-size:13px;margin-bottom:7px;cursor:pointer}
   .chk input{margin:3px 0 0;accent-color:var(--accent);flex:none}
   .list{max-height:190px;overflow-y:auto;border:1px solid var(--rule);border-radius:7px;padding:8px 10px}
@@ -1187,6 +1191,40 @@ function clashPairs(ids){
   return out;
 }
 
+/* Two courses at the same hour are only really in each other's way if they run
+   in the same weeks — and the schedule prints those weeks as prose we do not
+   interpret. So describe what is shared and let the student judge, rather than
+   assert a conflict we cannot actually establish. */
+function overlapInfo(a, b){
+  const A = optionsFor(a), B = optionsFor(b);
+  let when = null;
+  A.forEach(x => B.forEach(y => x.times.forEach(t => y.times.forEach(u => {
+    if(!when && timesClash(t, u)) when = { day:t.day, a:Math.max(t.a,u.a), b:Math.min(t.b,u.b) };
+  }))));
+  const datesOf = opts => [...new Set(opts.map(o => o.dates).filter(Boolean))];
+  return { when, aDates: datesOf(A), bDates: datesOf(B) };
+}
+
+function overlapLine(a, b){
+  const { when, aDates, bDates } = overlapInfo(a, b);
+  const at = when ? `${when.day} ${fmt(when.a)}-${fmt(when.b)}` : 'the same time';
+  /* Only one case is genuinely uncertain. If both run the full term they
+     collide outright; if one runs the full term the other's weeks fall inside
+     it, so they collide too. It is when both are partial that the weeks may
+     miss each other, and only then is there anything to check. */
+  const runs = (id, ds) => `${id} runs ${ds.join(' or ')}`;
+  let tail;
+  if(!aDates.length && !bDates.length){
+    tail = 'Both run the full term, so they really do collide.';
+  } else if(aDates.length && bDates.length){
+    tail = `${runs(a, aDates)} and ${runs(b, bDates)} — worth checking whether those weeks actually meet.`;
+  } else {
+    const part = aDates.length ? a : b, full = aDates.length ? b : a;
+    tail = `${runs(part, aDates.length ? aDates : bDates)}, inside ${full}'s full term, so they collide for those weeks.`;
+  }
+  return `<b>${esc(a)}</b>${esc(allSections(a))} and <b>${esc(b)}</b>${esc(allSections(b))} both meet ${esc(at)}. ${esc(tail)}`;
+}
+
 function toggleDone(id){
   if(isSeries(id)){
     // A series is finished one part at a time, so there is no single click that
@@ -1304,20 +1342,27 @@ function renderPlan(){
     </div>`;
   }).join('');
 
+  const load = `${units} units`
+    + (units < 8 ? ' — below the 8-unit part-time floor' :
+       units < 12 ? ' — below the 12-unit full-time floor' :
+       units > 20 ? " — over 20 units, needs Dean's approval" : '');
+
   let msg;
   if(hard.length){
-    msg = `<div class="banner no"><b>Time conflict</b><ul>` +
-      hard.map(([a,b]) => `<li>${a}${allSections(a)} and ${b}${allSections(b)} — ${esc(meetLabel(a))}</li>`).join('') + `</ul></div>`;
+    msg = `<div class="banner warn">
+        <b>${hard.length === 1 ? 'Two of these share a time slot' : `${hard.length} pairs share a time slot`}</b>
+        <ul>${hard.map(([a,b]) => `<li>${overlapLine(a,b)}</li>`).join('')}</ul>
+        <div class="foot">Nothing is blocked — this is your plan to make. ${esc(load)}.</div>
+      </div>`;
   } else if(!assign){
-    msg = `<div class="banner no"><b>Sections can't all be reconciled</b> — every combination leaves an overlap somewhere. Drop one course.</div>`;
+    msg = `<div class="banner warn"><b>No single set of sections avoids every overlap</b> — each course
+      has an opening that clears the others, but not all at once. The grid shows one arrangement;
+      pick sections yourself to see the rest. ${esc(load)}.</div>`;
   } else {
     const flex = ids.filter(id => optionsFor(id).length > 1).length;
-    msg = `<div class="banner ok"><b>No conflicts</b> · ${units} units` +
-      (units < 8 ? ' — below the 8-unit part-time floor' :
-       units < 12 ? ' — below the 12-unit full-time floor' :
-       units > 20 ? " — over 20 units, needs Dean's approval" : '') +
-      (flex ? `<br>${flex} course${flex===1?' has':'s have'} two sections; the grid shows a combination that works.` : '') +
-      `</div>`;
+    msg = `<div class="banner ok"><b>Nothing overlaps</b> · ${esc(load)}`
+      + (flex ? `<br>${flex} course${flex===1?' has':'s have'} more than one opening; the grid shows a combination that works.` : '')
+      + `</div>`;
   }
   status.innerHTML = msg;
   renderWeek(ids, assign);

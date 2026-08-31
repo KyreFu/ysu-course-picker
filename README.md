@@ -82,7 +82,21 @@ A **series** — a course taken several times, like the five-part CL600 internsh
 
 Click `+` on any ready course to add it to **My plan**. The detail panel also has an **Add to plan** button, which is how you add something you're taking with an override or alongside its prerequisite.
 
-The plan checks for time conflicts and shows a week grid of the result. Conflict detection is section-aware: CM112 and AC301 both meet Monday at 9, but AC301 has a noon section, so that's not a conflict and the grid shows you the combination that works. Add HM320 — also Monday 9a, one section only — and it flags the unavoidable pair by name.
+The plan shows a week grid and points out where two courses share a time slot. It's section-aware: CM112 and AC301 both meet Monday at 9, but AC301 has a noon opening, so the grid quietly uses that one and says nothing.
+
+### When two courses share a slot
+
+Nothing is ever blocked. The tool says what's shared and leaves the decision to you, because it often can't know whether there's a real problem — many courses run for part of the term only, and those dates are printed as prose the tool doesn't interpret.
+
+So it says as much as it honestly can, and no more:
+
+- **Both run the full term** — *"CM112 and AC301 both meet M 9a-12p. Both run the full term, so they really do collide."*
+- **One runs part of the term** — *"HM320 runs wks 3-12, inside CM112's full term, so they collide for those weeks."* Still certain: a partial range sits inside a full one.
+- **Both run part of the term** — *"HM101 runs wks 8-15 and CL611 runs wks 1-8 — worth checking whether those weeks actually meet."* This is the only uncertain case, and the only one that asks you to check.
+
+That last case is not rare. Of the 128 pairs in Fall 2026 that share a slot, 65 involve at least one course with a printed date range.
+
+The banner is amber rather than red, and the affected blocks in the grid are outlined amber too. It's a caution, not an error — your plan is saved either way.
 
 ### Resizing the panels
 
