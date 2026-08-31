@@ -153,6 +153,20 @@ function checkData(curriculum, classes) {
     });
   });
 
+  // Calendar: free text copied from the schedule, shown but never parsed.
+  const cal = (classes && classes.calendar) || null;
+  if (!cal) warn('calendar', 'the class file has no calendar, so the header cannot show term dates');
+  else {
+    ['range', 'addDrop', 'instructionBegins', 'addDropPeriod', 'finalExams'].forEach(k => {
+      if (cal[k] !== undefined && (typeof cal[k] !== 'string' || !cal[k].trim()))
+        err('calendar', `calendar.${k} is not readable text`);
+    });
+    if (cal.holidays !== undefined && (!Array.isArray(cal.holidays) || cal.holidays.some(h => typeof h !== 'string')))
+      err('calendar', 'calendar.holidays must be a list of strings');
+    if (!cal.range) warn('calendar', 'calendar.range is missing, so the header shows no term dates');
+    if (!cal.addDrop) warn('calendar', 'calendar.addDrop is missing, so the header shows no add/drop deadline');
+  }
+
   const src = (classes && classes.source) || {};
   if (!src.document) warn('source', 'the class file does not name the document it was transcribed from');
   if (src.url && !/^https?:\/\//i.test(String(src.url)))
@@ -173,6 +187,9 @@ function checkData(curriculum, classes) {
       seen.add(s.section);
 
       if (!Object.prototype.hasOwnProperty.call(s, 'meetings')) err('meetings', `${where} has no "meetings" key - use [] for an arranged time`);
+      // Free text copied from the schedule, shown but never parsed.
+      if (s.dates !== undefined && (typeof s.dates !== 'string' || !s.dates.trim()))
+        err('dates', `${where} has a "dates" value that is not readable text`);
       if (!Object.prototype.hasOwnProperty.call(s, 'instructor')) err('instructor', `${where} has no "instructor" key - use null for TBA`);
       if (!Object.prototype.hasOwnProperty.call(s, 'mode')) err('mode', `${where} has no "mode" key`);
 

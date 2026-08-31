@@ -66,9 +66,11 @@ The goal changes the advice, not just the view. From a standing start, WM151 out
 
 ### Read the ready list
 
-**Ready to take now** shows every course whose prerequisites you've satisfied, ranked by leverage. The number on each row is how many *remaining* courses toward your selected goal depend on it, counted transitively. Colour intensity tracks that number, scaled against the highest value currently showing.
+**Ready to take now** shows every course whose prerequisites you've satisfied, best first. **The warmer a row, the more of what's left depends on that course** — take the warm ones early and more opens up. A plain white row means nothing else is waiting on it, so take it whenever it fits.
 
-A `0` means nothing else is waiting on it — take it whenever it fits. A high number means it's holding up a lot.
+The shading is relative to the strongest course currently listed, not to some fixed scale, so it re-reads itself as you complete things and as you switch goals. Hover a row for the exact count: how many *remaining* courses toward your selected goal depend on it, counted transitively.
+
+This used to be a number in a coloured bubble on each row. The number meant little without explanation, and the bubble cost more width than the title could spare.
 
 Each row carries two buttons: **✓** marks the course done, **+** adds it to your plan and becomes **−** to take it back out. Marking a course done drops it off this list and usually pushes new rows on, since finishing something is what unlocks the next thing.
 
@@ -82,9 +84,21 @@ Click `+` on any ready course to add it to **My plan**. The detail panel also ha
 
 The plan checks for time conflicts and shows a week grid of the result. Conflict detection is section-aware: CM112 and AC301 both meet Monday at 9, but AC301 has a noon section, so that's not a conflict and the grid shows you the combination that works. Add HM320 — also Monday 9a, one section only — and it flags the unavoidable pair by name.
 
+### Resizing the panels
+
+Both side panels have a divider you can drag. Long course titles are the reason: at the default widths a name like *Herbal Patents & Ext. Medicines* runs out of room and is cut off with an ellipsis, and previously the only way to read it was to click through to the graph.
+
+Drag either divider to give a panel as much width as you want; the graph takes what's left, down to a floor of 220px, and no panel goes below 190px. Double-click a divider to put that side back to its default.
+
+Your widths are remembered per browser, under their own storage key — they're a screen preference, not progress, so they never appear in a backup file and restoring a backup won't change them.
+
+Narrowing the window squeezes the panels to fit, but doesn't forget what you chose: widen it again and they come back. Below 900px the panels stack and the dividers disappear.
+
+**You may not need to resize at all.** Any name too long for its column now carries a tooltip with the full text, so hovering reveals it. That's computed per render from what's actually cut off, so it only appears where it's needed.
+
 ### Choosing a section
 
-Where a course has more than one opening, the plan row carries a dropdown listing them by time and instructor — *M 3p-6p · Deng* or *Th 9a-12p · Garcia*. You can also pick straight from the course detail, where each section shows its own **+**.
+Where a course has more than one opening, the plan row carries a dropdown listing them by time and instructor — *M 3p-6p · Deng* or *Th 9a-12p · Garcia*. Where the schedule prints a part-term range, that appears too, which is how two sections sharing a time are told apart: CL811 runs *wks 1-6* and *wks 7-11*, both Monday at noon. You can also pick straight from the course detail, where each section shows its own **+**.
 
 Until you choose, the row says **Any section** and the solver keeps finding a combination that fits. Once you choose, that section is fixed and everything else works around it. This matters: if you pin AC301 to its Monday 9a section while CM112 is planned, the tool reports the conflict rather than quietly moving you to the noon section. Picking the section you're actually enrolled in is what makes the grid true.
 
@@ -159,9 +173,22 @@ CL600 requires twelve things. Eight of them are already required by the Pre-Clin
 
 Nothing is hidden by this. **Needs** in the detail panel lists every requirement, direct or not, and readiness is computed from the full list — so a course never becomes takeable because an arrow wasn't drawn. Corequisites and "one of" groups are never reduced: neither guarantees a specific course was completed, so neither can stand in for one.
 
+## The header
+
+The line across the top names the exact document the figures come from, and links to it:
+
+> Yo San University · Fall 2026 schedule · MAcCHM & DAcCHM · **Version 5** ↗
+> 31 Aug – 12 Dec · add/drop through 11 Sept
+
+The version is there so a stale copy is obvious without opening anything, and the link means a figure can be checked against the source in one click. Beside it are the term's date range and the add/drop deadline — the two dates worth knowing while you plan.
+
+The rest of the calendar — when instruction begins, the add/drop period as the schedule words it, final exams, and the academic holidays — sits in **About this data** with the source detail.
+
+All of it comes from the `calendar` block in the class file, so a new term brings its own dates and its own link with no code change. Like the section date ranges, these strings are copied from the schedule and shown; none of them is parsed, so nothing computes against them.
+
 ## What the tool tells you about its own data
 
-The right panel ends with **About this data**, headed by the exact document the figures come from — *Fall 2026 Course Schedule, v3, 2026-07-31* — as a link straight to that schedule, so anyone can check a figure against the source in one click. Under it is every modelling decision and every known disagreement between sources, in plain language: which entries are merged, where the sources contradict each other, and what isn't modelled at all.
+The right panel ends with **About this data**, headed by the exact document the figures come from — *Fall 2026 Course Schedule, v5, 2026-08-26* — as a link straight to that schedule, so anyone can check a figure against the source in one click. Under it is every modelling decision and every known disagreement between sources, in plain language: which entries are merged, where the sources contradict each other, and what isn't modelled at all.
 
 The link comes from `source.url` in the class file. Only `http` and `https` addresses become links; anything else is shown as plain text rather than trusted as a destination.
 
@@ -177,7 +204,7 @@ The point is that a student who notices something odd can tell whether it's a bu
 
 ## Where the data comes from
 
-Fall 2026 Course Schedule, version 2, dated 24 July 2026, published at yosan.edu. Course numbers, titles, units, meeting times and instructor come from page 1; the lettered prerequisite key from page 2. The citation travels with the data, in the `source` block of the class file.
+Fall 2026 Course Schedule, version 5, dated 26 August 2026, published at yosan.edu. Course numbers, titles, units, meeting times and instructor come from page 1; the lettered prerequisite key from page 2. The citation travels with the data, in the `source` block of the class file.
 
 The registration form is a separate document and contains no course listings.
 
