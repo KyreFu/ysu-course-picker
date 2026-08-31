@@ -173,6 +173,19 @@ CL600 requires twelve things. Eight of them are already required by the Pre-Clin
 
 Nothing is hidden by this. **Needs** in the detail panel lists every requirement, direct or not, and readiness is computed from the full list — so a course never becomes takeable because an arrow wasn't drawn. Corequisites and "one of" groups are never reduced: neither guarantees a specific course was completed, so neither can stand in for one.
 
+## The header
+
+The line across the top names the exact document the figures come from, and links to it:
+
+> Yo San University · Fall 2026 schedule · MAcCHM & DAcCHM · **Version 5** ↗
+> 31 Aug – 12 Dec · add/drop through 11 Sept
+
+The version is there so a stale copy is obvious without opening anything, and the link means a figure can be checked against the source in one click. Beside it are the term's date range and the add/drop deadline — the two dates worth knowing while you plan.
+
+The rest of the calendar — when instruction begins, the add/drop period as the schedule words it, final exams, and the academic holidays — sits in **About this data** with the source detail.
+
+All of it comes from the `calendar` block in the class file, so a new term brings its own dates and its own link with no code change. Like the section date ranges, these strings are copied from the schedule and shown; none of them is parsed, so nothing computes against them.
+
 ## What the tool tells you about its own data
 
 The right panel ends with **About this data**, headed by the exact document the figures come from — *Fall 2026 Course Schedule, v5, 2026-08-26* — as a link straight to that schedule, so anyone can check a figure against the source in one click. Under it is every modelling decision and every known disagreement between sources, in plain language: which entries are merged, where the sources contradict each other, and what isn't modelled at all.

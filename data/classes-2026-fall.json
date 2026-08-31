@@ -11,6 +11,17 @@
     "url": "https://yosan.edu/wp-content/uploads/2023/04/Course-Schedule-Fall-2026-V5.pdf"
   },
 
+  "_calendarNote": "Term dates as the schedule prints them. 'range' and 'addDrop' are the short forms shown in the header; the others are the source wording. Nothing here is parsed.",
+
+  "calendar": {
+    "range": "31 Aug – 12 Dec",
+    "addDrop": "add/drop through 11 Sept",
+    "instructionBegins": "Monday, Aug 31st",
+    "addDropPeriod": "thru Sept. 11th",
+    "finalExams": "December 7th to 12th",
+    "holidays": ["Mon, Sept 7th — Labor Day", "Thurs, Nov 26th — Thanksgiving Day"]
+  },
+
   "notes": [
     "Five sections have no instructor printed on the schedule: the two herb labs, which say only to reserve times after registration, and the three benchmark exams.",
     "Many courses run for part of the term only. The range the schedule prints is shown against each section, but it is not interpreted, so two courses at the same hour in different halves of the term are still reported as clashing when they are not.",

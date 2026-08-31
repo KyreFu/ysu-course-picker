@@ -90,6 +90,15 @@
   .tally{font-size:11px;color:var(--ink-3);font-weight:400;letter-spacing:0;text-transform:none}
   .tally a{color:var(--accent);text-decoration:none;border-bottom:1px solid transparent}
   .tally a:hover{border-bottom-color:var(--accent)}
+  header .meta a{color:inherit;text-decoration:none;border-bottom:1px solid var(--rule-2)}
+  header .meta a:hover{color:var(--accent);border-bottom-color:var(--accent)}
+  #term-dates{color:var(--ink-2)}
+  .cal{
+    display:grid;grid-template-columns:auto 1fr;gap:3px 10px;
+    margin:0 0 11px;font-size:12px;color:var(--ink-3);line-height:1.45;
+  }
+  .cal dt{color:var(--ink-2);font-weight:600;white-space:nowrap}
+  .cal dd{margin:0}
   .pick{
     flex:1;min-width:0;max-width:60%;font:inherit;font-size:11px;
     padding:1px 3px;border:1px solid var(--rule-2);border-radius:5px;
@@ -201,7 +210,8 @@
 
 <header>
   <h1>Prerequisite explorer</h1>
-  <span class="meta" id="term-label">Yo San University · MAcCHM &amp; DAcCHM</span>
+  <span class="meta" id="term-label"></span>
+  <span class="meta" id="term-dates"></span>
   <span class="meta" style="margin-left:auto">Click any course to trace its chain. Progress saves in this browser only.</span>
 </header>
 
@@ -279,6 +289,7 @@
     </div>
     <div class="sec">
       <h2>About this data <span id="notes-src" class="tally"></span></h2>
+      <dl id="term-cal" class="cal"></dl>
       <div id="data-notes"></div>
       <p class="note" style="margin-top:9px">
         Prerequisites can only be waived by approved Override Petition — check with the registrar before relying on this.
@@ -1567,10 +1578,34 @@ window.APP = {
   layoutOf: () => ({ ...layout }), setLayout: l => { layout = { ...l }; clampLayout(); applyLayout(); cy.resize(); }, DB, SERIES, SLOTS, TRACKS, GOALS, QI, QI_UNITS
 };
 
-// The term the data describes, stated in the UI so a stale copy is obvious.
-document.getElementById('term-label').textContent =
-  `Yo San University · ${TERM.label} schedule · MAcCHM & DAcCHM`;
-document.title = `Yo San — prerequisite explorer, ${TERM.label}`;
+/* The exact document this data came from, named in the header and linked to it,
+   so a stale copy is obvious at a glance and checkable in one click. */
+function renderHeader(){
+  const s = TERM.source || {}, cal = TERM.calendar || {};
+  const label = `Yo San University · ${TERM.label} schedule · MAcCHM & DAcCHM`
+    + (s.version ? ` · Version ${s.version}` : '');
+  const href = /^https?:\/\//i.test(String(s.url || '')) ? s.url : null;
+  document.getElementById('term-label').innerHTML = href
+    ? `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer"
+         title="Open ${esc(s.document || 'the schedule')}${s.dated ? `, ${esc(s.dated)}` : ''}">${esc(label)} &#8599;</a>`
+    : esc(label);
+
+  document.getElementById('term-dates').textContent =
+    [cal.range, cal.addDrop].filter(Boolean).join(' · ');
+
+  // The rest of the calendar, in the panel where source detail lives.
+  const rows = [
+    ['Instruction begins', cal.instructionBegins],
+    ['Add/drop', cal.addDropPeriod],
+    ['Final exams', cal.finalExams],
+    ['Holidays', (cal.holidays || []).join(' · ')]
+  ].filter(([, v]) => v);
+  document.getElementById('term-cal').innerHTML =
+    rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('');
+
+  document.title = `Yo San — prerequisite explorer, ${TERM.label}`;
+}
+renderHeader();
 
 load();
 document.getElementById('req-hours').checked = extra.hours;
