@@ -66,9 +66,11 @@ The goal changes the advice, not just the view. From a standing start, WM151 out
 
 ### Read the ready list
 
-**Ready to take now** shows every course whose prerequisites you've satisfied, ranked by leverage. The number on each row is how many *remaining* courses toward your selected goal depend on it, counted transitively. Colour intensity tracks that number, scaled against the highest value currently showing.
+**Ready to take now** shows every course whose prerequisites you've satisfied, best first. **The warmer a row, the more of what's left depends on that course** — take the warm ones early and more opens up. A plain white row means nothing else is waiting on it, so take it whenever it fits.
 
-A `0` means nothing else is waiting on it — take it whenever it fits. A high number means it's holding up a lot.
+The shading is relative to the strongest course currently listed, not to some fixed scale, so it re-reads itself as you complete things and as you switch goals. Hover a row for the exact count: how many *remaining* courses toward your selected goal depend on it, counted transitively.
+
+This used to be a number in a coloured bubble on each row. The number meant little without explanation, and the bubble cost more width than the title could spare.
 
 Each row carries two buttons: **✓** marks the course done, **+** adds it to your plan and becomes **−** to take it back out. Marking a course done drops it off this list and usually pushes new rows on, since finishing something is what unlocks the next thing.
 

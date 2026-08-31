@@ -148,11 +148,10 @@
   .row:hover .code{text-decoration:underline}
   .code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12px;font-weight:600;flex:none}
   .row .nm{color:var(--ink-2);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
-  .imp{
-    flex:none;font-size:10.5px;padding:1px 7px;border-radius:999px;
-    background:var(--warn-soft);border:1px solid #e6d3ab;color:var(--warn);font-weight:600;
-  }
-  .imp.zero{background:#f2f3f1;border-color:var(--rule);color:var(--ink-3);font-weight:400}
+  /* Rows in the ready list are tinted by how much the course unblocks: the
+     warmer the row, the more of what is left depends on it. Full-bleed, so
+     the negative margins cancel the list's own padding. */
+  .row.lev{margin:0 -10px;padding-left:10px;padding-right:10px}
   .empty{font-size:12.5px;color:var(--ink-3);font-style:italic;padding:4px 0}
   .det h3{font-size:15px;margin:0 0 2px;font-weight:600}
   .det .dsub{font-size:12.5px;color:var(--ink-2);margin-bottom:12px}
@@ -220,7 +219,7 @@
     <div class="sec">
       <h2>Ready to take now</h2>
       <div class="list" id="ready"></div>
-      <p class="note" style="margin:7px 0 0">Everything whose prerequisites you've met, ranked by how much it unblocks. The number is how many remaining courses toward the selected goal depend on it. <b>&#10003;</b> marks one done, <b>+</b> adds it to your plan. Courses that don't run this term still appear — you may have taken them already — but <b>+</b> is greyed out.</p>
+      <p class="note" style="margin:7px 0 0">Everything whose prerequisites you've met, best first. <b>The warmer the row, the more of what's left depends on that course</b> — take those early and more opens up. Hover a row for the exact count. <b>&#10003;</b> marks one done, <b>+</b> adds it to your plan. Courses that don't run this term still appear — you may have taken them already — but <b>+</b> is greyed out.</p>
     </div>
     <div class="sec">
       <h2>My plan <span id="plan-count" class="tally"></span></h2>
@@ -593,11 +592,20 @@ function lerp(a, b, t){
   const c = (u,v) => Math.round(u + (v-u)*t).toString(16).padStart(2,'0');
   return `#${c(r1,r2)}${c(g1,g2)}${c(b1,b2)}`;
 }
-function impStyle(count, max){
-  if(!count) return 'background:#f2f3f1;border-color:#e3e5e2;color:#8d9997;font-weight:400';
-  const t = max > 1 ? Math.min(1, count/max) : 1;
-  const e = Math.pow(t, 0.7);
-  return `background:${lerp('#FAEEDA','#EF9F27',e)};border-color:${lerp('#FAC775','#854F0B',e)};color:${lerp('#854F0B','#412402',e)}`;
+/* Tint for a whole ready-list row, standing in for the old number badge.
+   Scaled against the strongest course currently listed, so the shading is
+   relative to what you can actually take now rather than to some absolute.
+   The curve lifts the middle of the range: without it almost everything
+   sits at the pale end and only the top one or two read as warm. */
+function levStyle(count, max){
+  if(!count || max <= 0) return '';
+  const e = Math.pow(Math.min(1, count / max), 0.55);
+  return `background:${lerp('#ffffff','#EDB65B',e)}`;
+}
+function levTitle(count){
+  return count
+    ? `${count} remaining course${count===1?'':'s'} toward this goal depend on it`
+    : 'Nothing else is waiting on this one';
 }
 
 
@@ -1344,10 +1352,9 @@ function renderReady(){
   const list = rankedReady();
   const max = list.length ? list[0].i.count : 0;
   document.getElementById('ready').innerHTML = list.length
-    ? list.map(({n,i}) => `<div class="row">
+    ? list.map(({n,i}) => `<div class="row lev" style="${levStyle(i.count, max)}" title="${levTitle(i.count)}">
         <span class="code" data-go="${n.id}">${n.id}</span>
         <span class="nm" data-go="${n.id}">${esc(n.title)}</span>
-        <span class="imp" style="${impStyle(i.count, max)}" title="Unlocks ${i.count} further course${i.count===1?'':'s'} toward this goal">${i.count}</span>
         ${isSeries(n.id)
           ? `<button class="add" data-go="${n.id}" title="${membersOf(n.id).length} parts — open it to choose one">&rsaquo;</button>`
           : `<button class="add" data-done="${n.id}" title="Mark completed">&#10003;</button>
