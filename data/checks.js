@@ -173,6 +173,9 @@ function checkData(curriculum, classes) {
       seen.add(s.section);
 
       if (!Object.prototype.hasOwnProperty.call(s, 'meetings')) err('meetings', `${where} has no "meetings" key - use [] for an arranged time`);
+      // Free text copied from the schedule, shown but never parsed.
+      if (s.dates !== undefined && (typeof s.dates !== 'string' || !s.dates.trim()))
+        err('dates', `${where} has a "dates" value that is not readable text`);
       if (!Object.prototype.hasOwnProperty.call(s, 'instructor')) err('instructor', `${where} has no "instructor" key - use null for TBA`);
       if (!Object.prototype.hasOwnProperty.call(s, 'mode')) err('mode', `${where} has no "mode" key`);
 

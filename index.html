@@ -437,7 +437,7 @@ Object.entries(SECTIONS).forEach(([id, sections]) => {
   sections.forEach(s => {
     const times = (s.meetings||[]).map(m => ({ day:m.day, a:mins(m.start), b:mins(m.end) }))
       .filter(t => t.a !== null && t.b !== null);
-    if(times.length) secs.push({ section:s.section, times, instructor:s.instructor, mode:s.mode });
+    if(times.length) secs.push({ section:s.section, times, instructor:s.instructor, mode:s.mode, dates:s.dates });
   });
   if(secs.length) SLOTS[id] = secs;
 });
@@ -474,9 +474,13 @@ function conflicts(idA, idB){
   return A.every(a => B.every(b => sectionsClash(a, b)));
 }
 // Compact one-line description of a section, for the chooser.
+// Plain text. The one caller escapes it, so nothing is escaped twice here.
 function sectionSummary(s){
-  const when = s.times.map(t => `${t.day} ${fmt(t.a)}-${fmt(t.b)}`).join(', ');
-  return s.instructor ? `${when} · ${esc(s.instructor)}` : when;
+  const bits = [s.times.map(t => `${t.day} ${fmt(t.a)}-${fmt(t.b)}`).join(', ')];
+  if(s.instructor) bits.push(s.instructor);
+  // Two sections can share a time and differ only by which weeks they run.
+  if(s.dates) bits.push(s.dates);
+  return bits.join(' · ');
 }
 function fmt(m){
   const h = Math.floor(m/60), mm = m % 60;
@@ -518,6 +522,7 @@ function seriesBlock(sid){
       const when = runs ? (SECTIONS[m]||[]).map(s => {
         const bits = [esc(sectionTime(s))];
         if(s.instructor) bits.push(esc(s.instructor));
+        if(s.dates) bits.push(esc(s.dates));
         if(modeLabel(s.mode)) bits.push(modeLabel(s.mode));
         return bits.join(' · ');
       }).join(' | ') : `not offered ${esc(TERM.label)}`;
@@ -546,6 +551,7 @@ function sectionsBlock(id){
     <div class="list">${secs.map(s => {
       const bits = [];
       if(s.instructor) bits.push(esc(s.instructor));
+      if(s.dates) bits.push(esc(s.dates));
       if(modeLabel(s.mode)) bits.push(modeLabel(s.mode));
       const taking = plan.has(id) && pick === s.section;
       return `<div class="row" style="cursor:default">

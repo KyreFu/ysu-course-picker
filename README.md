@@ -84,7 +84,7 @@ The plan checks for time conflicts and shows a week grid of the result. Conflict
 
 ### Choosing a section
 
-Where a course has more than one opening, the plan row carries a dropdown listing them by time and instructor — *M 3p-6p · Deng* or *Th 9a-12p · Garcia*. You can also pick straight from the course detail, where each section shows its own **+**.
+Where a course has more than one opening, the plan row carries a dropdown listing them by time and instructor — *M 3p-6p · Deng* or *Th 9a-12p · Garcia*. Where the schedule prints a part-term range, that appears too, which is how two sections sharing a time are told apart: CL811 runs *wks 1-6* and *wks 7-11*, both Monday at noon. You can also pick straight from the course detail, where each section shows its own **+**.
 
 Until you choose, the row says **Any section** and the solver keeps finding a combination that fits. Once you choose, that section is fixed and everything else works around it. This matters: if you pin AC301 to its Monday 9a section while CM112 is planned, the tool reports the conflict rather than quietly moving you to the noon section. Picking the section you're actually enrolled in is what makes the grid true.
 
@@ -161,7 +161,7 @@ Nothing is hidden by this. **Needs** in the detail panel lists every requirement
 
 ## What the tool tells you about its own data
 
-The right panel ends with **About this data**, headed by the exact document the figures come from — *Fall 2026 Course Schedule, v3, 2026-07-31* — as a link straight to that schedule, so anyone can check a figure against the source in one click. Under it is every modelling decision and every known disagreement between sources, in plain language: which entries are merged, where the sources contradict each other, and what isn't modelled at all.
+The right panel ends with **About this data**, headed by the exact document the figures come from — *Fall 2026 Course Schedule, v5, 2026-08-26* — as a link straight to that schedule, so anyone can check a figure against the source in one click. Under it is every modelling decision and every known disagreement between sources, in plain language: which entries are merged, where the sources contradict each other, and what isn't modelled at all.
 
 The link comes from `source.url` in the class file. Only `http` and `https` addresses become links; anything else is shown as plain text rather than trusted as a destination.
 
@@ -177,7 +177,7 @@ The point is that a student who notices something odd can tell whether it's a bu
 
 ## Where the data comes from
 
-Fall 2026 Course Schedule, version 2, dated 24 July 2026, published at yosan.edu. Course numbers, titles, units, meeting times and instructor come from page 1; the lettered prerequisite key from page 2. The citation travels with the data, in the `source` block of the class file.
+Fall 2026 Course Schedule, version 5, dated 26 August 2026, published at yosan.edu. Course numbers, titles, units, meeting times and instructor come from page 1; the lettered prerequisite key from page 2. The citation travels with the data, in the `source` block of the class file.
 
 The registration form is a separate document and contains no course listings.
 
