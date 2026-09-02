@@ -172,7 +172,9 @@ Restore validates what it reads. Files from another tool or a newer version are 
 
 **Solid arrow** — hard prerequisite.
 **Dashed arrow** — corequisite, which the schedule allows concurrently. Doesn't block readiness.
-**Filled node** — marked complete.
+**Ticked node** — marked complete. The bubble takes its track's solid colour and carries a tick
+in its top-right corner, so a finished course reads as finished without relying on colour alone.
+A series is ticked once enough of its parts are done.
 **Ringed node** — every prerequisite satisfied; ready to take.
 
 Alt-click any node — Option on a Mac — to mark it complete or put it back without leaving the graph. A plain click still selects it and traces its chain.

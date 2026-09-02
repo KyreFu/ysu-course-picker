@@ -284,7 +284,7 @@
       <h2>Reading the graph</h2>
       <p class="note">
         Solid arrows are hard prerequisites. Dashed arrows are corequisites — the schedule allows them concurrently.
-        A filled node is one you've marked complete; a ringed node is one every prerequisite for which is satisfied.
+        A node carrying a tick in its top corner is one you've marked complete; a ringed node is one every prerequisite for which is satisfied.
         Alt-click a node — Option on a Mac — to mark it complete or put it back without leaving the graph.
         Selecting a course dims everything except its own chain: what it needs behind it, what it unlocks ahead.
         The view zooms in far enough to stay readable, so long chains will run off-screen — drag to follow them,
@@ -862,6 +862,20 @@ Object.values(DB).filter(n => shown(n.id)).forEach(n => {
   n.anyOf.forEach(g => g.forEach(p => DB[p] && els.push({data:{id:`${p}?>${n.id}`, source:p, target:n.id, kind:'co'}})));
 });
 
+/* A finished course keeps its track colour, so the tick in the corner is what
+   says "done" at a glance. It is a white disc with a coloured ring, which keeps
+   it legible both on a dark track fill and on the white fill an unoffered
+   course gets. Cytoscape has no badge of its own, so it rides in as a node
+   background image pinned to the top-right corner. The width and height on the
+   <svg> are load-bearing: without them the image has no intrinsic size and
+   Cytoscape draws a cropped fragment of it. */
+const DONE_BADGE = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">' +
+    '<circle cx="12" cy="12" r="10.5" fill="#ffffff" stroke="#0f6e56" stroke-width="2"/>' +
+    '<path d="M7 12.4 L10.4 15.9 L17 8.7" fill="none" stroke="#0f6e56"' +
+      ' stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>' +
+  '</svg>');
+
 const cy = cytoscape({
   container: document.getElementById('cy'),
   elements: els,
@@ -881,7 +895,14 @@ const cy = cytoscape({
     }},
     { selector:'node.done', style:{
         'background-color':ele => TRACKS[ele.data('track')].line,
-        'color':'#ffffff','border-color':ele => TRACKS[ele.data('track')].ink
+        'color':'#ffffff','border-color':ele => TRACKS[ele.data('track')].ink,
+        // The badge sits wholly inside the bubble on purpose: letting it hang
+        // over the edge puts it outside the node's own texture, and Cytoscape
+        // then paints only the part that falls within.
+        'background-image':DONE_BADGE,
+        'background-fit':'none','background-width':16,'background-height':16,
+        'background-position-x':'100%','background-position-y':'0%',
+        'background-offset-x':-4,'background-offset-y':4
     }},
     { selector:'node.ready', style:{ 'border-width':3.5,'border-color':'#0f6e56' }},
     // in the curriculum but not running this term: still on the graph, so a
@@ -929,8 +950,10 @@ function paint(){
   cy.batch(() => {
     cy.nodes().forEach(n => {
       const id = n.id();
-      n.toggleClass('done', done.has(id));
-      n.toggleClass('ready', !done.has(id) && ready(id));
+      // satisfied(), not done.has(): a series id never sits in `done`, so a
+      // finished series would otherwise keep offering itself as ready to take.
+      n.toggleClass('done', satisfied(id));
+      n.toggleClass('ready', !satisfied(id) && ready(id));
     });
   });
 }
