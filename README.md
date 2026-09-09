@@ -128,7 +128,10 @@ An amber ▲ next to a planned course means its prerequisites aren't marked comp
 
 Click any node. The graph dims to that course's lineage: prerequisites behind it in green, what it unlocks ahead in amber. The view zooms in far enough to stay readable, so long chains run off-screen — drag to follow, or click empty space to zoom back out.
 
-The right panel lists **Needs** and **Unlocks** with ✓ / ○ against each. Both are clickable, which is usually a faster way to walk a long chain than tracing it visually.
+The right panel lists **Needs** and **Unlocks** with ✓ / ○ against each, code and course name side by side.
+Both are clickable, which is usually a faster way to walk a long chain than tracing it visually. Under Needs, a row
+with no qualifier is a plain hard prerequisite; the exceptions say `concurrent ok` or `one of`, and a "one of" row
+names every course in the group, so it isn't clickable.
 
 ### Series
 

@@ -161,6 +161,9 @@
   .row:hover .code{text-decoration:underline}
   .code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12px;font-weight:600;flex:none}
   .row .nm{color:var(--ink-2);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+  /* Under "Needs", a row with no qualifier is a plain hard prerequisite; only
+     the exceptions — concurrent, one of — have to say so. */
+  .row .qual{flex:none;font-size:11px;color:var(--ink-3);white-space:nowrap}
   /* Rows in the ready list are tinted by how much the course unblocks: the
      warmer the row, the more of what is left depends on it. Full-bleed, so
      the negative margins cancel the list's own padding. */
@@ -1072,9 +1075,11 @@ function renderDetail(){
   const unlocks = Object.values(DB).filter(m =>
     m.pre.includes(n.id) || m.co.includes(n.id) || m.anyOf.some(g => g.includes(n.id)));
   const reqRows = [
-    ...n.pre.map(p => ({id:p, tag:'required'})),
-    ...n.co.map(p => ({id:p, tag:'concurrent ok'})),
-    ...n.anyOf.map(g => ({id:g.join(' or '), tag:'one of', ok:g.some(x => done.has(x))}))
+    ...n.pre.map(p => ({ids:[p], tag:'required'})),
+    ...n.co.map(p => ({ids:[p], tag:'concurrent ok'})),
+    // satisfied(), not done.has(): every one-of group in the curriculum is a
+    // pair of series, and a series id never sits in `done`.
+    ...n.anyOf.map(g => ({ids:g, tag:'one of', ok:g.some(satisfied)}))
   ];
   const flagRows = n.flags.map(f => ({
     // Labels come from the data, so renaming a requirement renames it here too.
@@ -1105,9 +1110,18 @@ function renderDetail(){
     <h2 style="margin-top:16px">Needs (${reqRows.length + flagRows.length})</h2>
     <div class="list">${
       (reqRows.length + flagRows.length) === 0 ? '<div class="empty">No prerequisites.</div>' :
-      reqRows.map(r => `<div class="row" data-go="${DB[r.id]?r.id:''}">
-        <span class="code">${'ok' in r ? (r.ok?'<span class="tick">✓</span>':'<span class="cross">○</span>') : statusMark(r.id)} ${r.id}</span>
-        <span class="nm">${r.tag}</span></div>`).join('') +
+      reqRows.map(r => {
+        const mark = 'ok' in r
+          ? (r.ok ? '<span class="tick">✓</span>' : '<span class="cross">○</span>')
+          : statusMark(r.ids[0]);
+        // A one-of group has no single course to open, so it stays inert.
+        const go = r.ids.length === 1 && DB[r.ids[0]] ? r.ids[0] : '';
+        const name = r.ids.map(x => DB[x] ? DB[x].title : x).join(' or ');
+        return `<div class="row"${go ? ` data-go="${esc(go)}"` : ' style="cursor:default"'}>
+          <span class="code">${mark} ${esc(r.ids.join(' or '))}</span>
+          <span class="nm">${esc(name)}</span>
+          ${r.tag === 'required' ? '' : `<span class="qual">${esc(r.tag)}</span>`}</div>`;
+      }).join('') +
       flagRows.map(r => `<div class="row" style="cursor:default">
         <span class="code">${r.ok?'<span class="tick">✓</span>':'<span class="cross">○</span>'} —</span>
         <span class="nm">${esc(r.label)}</span></div>`).join('')
