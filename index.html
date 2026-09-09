@@ -1489,7 +1489,7 @@ function renderNotes(){
   const href = /^https?:\/\//i.test(String(s.url || '')) ? s.url : null;
   document.getElementById('notes-src').innerHTML = !cite ? ''
     : href ? `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer"
-                 title="Open the schedule this data was read from">${esc(cite)} &#8599;</a>`
+                 title="${esc(linkHint(s))}">${esc(cite)} &#8599;</a>`
            : esc(cite);
 }
 
@@ -1660,8 +1660,16 @@ window.APP = {
   layoutOf: () => ({ ...layout }), setLayout: l => { layout = { ...l }; clampLayout(); applyLayout(); cy.resize(); }, DB, SERIES, SLOTS, TRACKS, GOALS, QI, QI_UNITS
 };
 
-/* The exact document this data came from, named in the header and linked to it,
-   so a stale copy is obvious at a glance and checkable in one click. */
+/* The document this data came from is named in full and linked to where the
+   university publishes it, so a stale copy is obvious at a glance and the
+   current one is a click away. The citation, not the link, is what pins the
+   revision: source.url points at a page that keeps changing under it. */
+function linkHint(s){
+  const where = s.publisher ? `at ${s.publisher}` : 'at the university';
+  return `Open the course schedule page ${where}`
+    + (s.version ? ` — this data was read from version ${s.version}` : '');
+}
+
 function renderHeader(){
   const s = TERM.source || {}, cal = TERM.calendar || {};
   const label = `Yo San University · ${TERM.label} schedule · MAcCHM & DAcCHM`
@@ -1669,7 +1677,7 @@ function renderHeader(){
   const href = /^https?:\/\//i.test(String(s.url || '')) ? s.url : null;
   document.getElementById('term-label').innerHTML = href
     ? `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer"
-         title="Open ${esc(s.document || 'the schedule')}${s.dated ? `, ${esc(s.dated)}` : ''}">${esc(label)} &#8599;</a>`
+         title="${esc(linkHint(s))}">${esc(label)} &#8599;</a>`
     : esc(label);
 
   document.getElementById('term-dates').textContent =

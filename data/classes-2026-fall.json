@@ -3,12 +3,14 @@
   "term": "2026-fall",
   "label": "Fall 2026",
   "_comment": "Open classes: what runs this term, and when. One entry per section. Delivery mode follows the schedule's own legend: everything is in person on campus except rows marked with the laptop glyph, which are delivered via Zoom. A null instructor means the schedule prints none. 'dates' is the part-term range the schedule prints, copied verbatim for display; it is never parsed, so it does not affect conflict detection.",
+  "_sourceNote": "'url' points at the university's course-schedule page rather than at one version's PDF. The PDF filename carries its version, so a direct link goes stale the moment a new one is published; the page always lists the current file. 'document', 'version' and 'dated' still name the exact revision this data was transcribed from, so a stale copy is visible without following the link.",
+
   "source": {
     "document": "Fall 2026 Course Schedule",
     "version": 5,
     "dated": "2026-08-26",
     "publisher": "yosan.edu",
-    "url": "https://yosan.edu/wp-content/uploads/2023/04/Course-Schedule-Fall-2026-V5.pdf"
+    "url": "https://yosan.edu/course-schedule-yo-san-university/"
   },
 
   "_calendarNote": "Term dates as the schedule prints them. 'range' and 'addDrop' are the short forms shown in the header; the others are the source wording. Nothing here is parsed.",
