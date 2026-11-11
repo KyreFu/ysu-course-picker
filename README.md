@@ -168,6 +168,18 @@ Below the list it also shows:
 
 It errs on the safe side: courses that run for part of the term are still treated as clashing with anything at the same hour. It never changes your progress, and it only changes your plan when you click **+** or **↺**.
 
+### Graph or week
+
+The top of the middle area has a switch: **Prerequisite graph** | **My week**.
+
+- **Prerequisite graph** is the map of every course and what it needs, described under [Trace a chain](#trace-a-chain) below.
+- **My week** sets the graph aside and fills the middle with your plan on a full-size week. Use it when you're picking times rather than tracing prerequisites. Each block shows the course, its time, title and instructor, plus the laptop if it's online. Click a block for the course's detail on the right.
+  - The clash banner from **My plan** sits above the grid.
+  - Courses with arranged times are listed beneath it.
+  - The week updates as soon as you add or remove a course anywhere.
+
+The choice is remembered in this browser, like the panel widths, and never goes into a backup file. On a phone the switch isn't shown. The plan panel already has a week there, and the graph has its own show/hide button (see [On a phone](#on-a-phone)).
+
 ### Trace a chain
 
 Click any node. The graph dims to that course's lineage: prerequisites behind it in green, what it unlocks ahead in amber. The view zooms in far enough to stay readable, so long chains run off-screen — drag to follow, or click empty space to zoom back out.
@@ -241,7 +253,13 @@ Sections with an arranged time, such as internships and herb labs, meet on no pa
 
 ### On a phone
 
-The three panes stack — left panel, graph, right panel — and the page scrolls. Selecting a course scrolls its detail into view for you, since the right panel is below the graph at that width. The graph is still the awkward part on a small screen; the course list is usually the faster way around.
+On a narrow screen (under 900px wide) the panels stack, left panel first, then the right panel, and the page scrolls. Selecting a course scrolls its detail into view for you.
+
+**The graph starts hidden.** On a touch screen it takes over every swipe to pan and zoom, so anyone who scrolled onto it got stuck there, unable to reach the search below. In its place is a **Show prerequisite graph** button.
+- Tap it to bring the graph back, framed on whatever course you've selected.
+- Tap **Hide prerequisite graph** to put it away again.
+
+The course list, search and detail panel cover everything the graph does, and they're the faster way around on a phone anyway. The header's hint about clicking the graph is hidden at that width too. On a wider screen nothing changes.
 
 ## Saving your progress
 
