@@ -225,7 +225,11 @@ The point is that a student who notices something odd can tell whether it's a bu
 
 ## Where the data comes from
 
-Fall 2026 Course Schedule, version 5, dated 26 August 2026, published at [yosan.edu](https://yosan.edu/course-schedule-yo-san-university/). Course numbers, titles, units, meeting times and instructor come from page 1; the lettered prerequisite key from page 2. The citation travels with the data, in the `source` block of the class file.
+**Current term: Spring 2027, working draft.** Meeting times, instructors and delivery modes are transcribed from a photo of the printed draft, which carries no version number or date. Re-check `data/classes-2027-spring.json` against the published schedule on [yosan.edu](https://yosan.edu/course-schedule-yo-san-university/) when it appears. Prerequisites still follow the Fall 2026 key; the draft's reverse page has not been checked against it.
+
+**Fall 2026** (`data/classes-2026-fall.json`): Course Schedule version 5, dated 26 August 2026, published at [yosan.edu](https://yosan.edu/course-schedule-yo-san-university/). Course numbers, titles, units, meeting times and instructor come from page 1; the lettered prerequisite key from page 2.
+
+The citation travels with the data, in the `source` block of each class file.
 
 The registration form is a separate document and contains no course listings.
 

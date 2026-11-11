@@ -144,7 +144,7 @@ try {
       <span><b>${cy.edges().length}</b> edges drawn</span>
     </div>
     <div class="counts">
-      <span>Source: ${esc(classes.source.document)}, version ${esc(classes.source.version)}, ${esc(classes.source.dated)}</span>
+      <span>Source: ${esc([classes.source.document, classes.source.version && `version ${classes.source.version}`, classes.source.dated].filter(Boolean).join(', '))}</span>
     </div>
     <h2>Errors (${errors})</h2>${list(findings,'error')}
     <h2>Warnings (${warns})</h2>${list(findings,'warn')}
