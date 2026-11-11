@@ -192,6 +192,16 @@
   .menu li.on{background:var(--accent-soft)}
   .menu li .n{color:var(--ink-3);white-space:nowrap}
   .menu li.none{cursor:default;color:var(--ink-3);font-style:italic}
+  .days{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:7px}
+  .chip{
+    min-width:30px;padding:3px 7px;border-radius:12px;border:1px solid var(--rule-2);
+    background:var(--panel);color:var(--ink-2);font:inherit;font-size:11.5px;cursor:pointer;
+  }
+  .chip:hover{border-color:var(--accent);color:var(--accent)}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .days .lnk{font-size:11.5px;margin-left:4px}
+  #inst-result .who{color:var(--ink-2)}
+  #inst-result .who[data-pick-inst]{text-decoration:underline dotted;cursor:pointer}
   #inst-result .list{margin-top:8px}
   #inst-result .row{align-items:center}
   #inst-result .when{flex:none;font-size:11.5px;color:var(--ink-2);white-space:nowrap}
@@ -365,6 +375,7 @@
           role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="inst-menu">
         <ul id="inst-menu" class="menu" role="listbox" hidden></ul>
       </div>
+      <div class="days" id="inst-days" role="group" aria-label="Filter by day"></div>
       <div id="inst-result"></div>
     </div>
     <div class="sec" id="browse">
@@ -717,12 +728,16 @@ function seriesBlock(sid){
    under each named person; "Team" and "TBD" are not people and are dropped.
    Matching goes by last name: the last word of the name, and each part of a
    hyphenated one, so "Mal" finds Plymale-Mallory and "Li" finds M. D. Li. */
+// "Parker / Namin" is two people; "Luca & Team" is one. Team and TBD are not names.
+function splitNames(str){
+  return String(str).split(/\s*(?:\/|&|,|\band\b)\s*/i)
+    .map(x => x.trim()).filter(x => x && !/^(team|tbd|tba|staff)$/i.test(x));
+}
 const INSTRUCTORS = (() => {
   const people = new Map();   // display name -> { name, last, parts, teaches:[{ id, s, with }] }
   Object.entries(SECTIONS).forEach(([id, secs]) => secs.forEach(s => {
     if(!s.instructor) return;
-    const names = String(s.instructor).split(/\s*(?:\/|&|,|\band\b)\s*/i)
-      .map(x => x.trim()).filter(x => x && !/^(team|tbd|tba|staff)$/i.test(x));
+    const names = splitNames(s.instructor);
     names.forEach(name => {
       if(!people.has(name)){
         const last = name.split(/\s+/).pop();
@@ -738,14 +753,32 @@ const INSTRUCTORS = (() => {
 let instructor = null;      // display name of the instructor being shown
 let instQuery = '';
 let instActive = 0;         // highlighted row in the dropdown
+let instDays = new Set();   // day filter; empty means any day
+
+/* Day filter. Only days something actually meets on get a chip, so a term with
+   no Saturday classes shows no Saturday. A section with an arranged time meets
+   on no day, so any day filter leaves it out. */
+const DAY_NAMES = { M:'Monday', Tu:'Tuesday', W:'Wednesday', Th:'Thursday', F:'Friday', Sa:'Saturday', Su:'Sunday' };
+const DAY_ORDER = ['M','Tu','W','Th','F','Sa','Su'];
+const SEARCH_DAYS = DAY_ORDER.filter(d =>
+  Object.values(SECTIONS).some(secs => secs.some(s => (s.meetings || []).some(m => m.day === d))));
+const meetsOnDays = s => !instDays.size || (s.meetings || []).some(m => instDays.has(m.day));
+// Several days means any of them. Short form for the dropdown, full for sentences.
+const dayList = full => {
+  const ds = DAY_ORDER.filter(d => instDays.has(d)).map(d => full ? DAY_NAMES[d] : d);
+  return full && ds.length > 1 ? `${ds.slice(0, -1).join(', ')} or ${ds[ds.length - 1]}` : ds.join(', ');
+};
+// The sections of one person that pass the day filter.
+const teachingOn = p => p.teaches.filter(t => meetsOnDays(t.s));
 
 function instMatches(q){
   q = q.trim().toLowerCase();
-  if(!q) return INSTRUCTORS;
-  const byLast = INSTRUCTORS.filter(p =>
+  const pool = instDays.size ? INSTRUCTORS.filter(p => teachingOn(p).length) : INSTRUCTORS;
+  if(!q) return pool;
+  const byLast = pool.filter(p =>
     p.last.toLowerCase().startsWith(q) || p.parts.some(x => x.startsWith(q)));
   // Fall back to anywhere in the name, for a typo-free partial like "efan".
-  return byLast.length ? byLast : INSTRUCTORS.filter(p => p.name.toLowerCase().includes(q));
+  return byLast.length ? byLast : pool.filter(p => p.name.toLowerCase().includes(q));
 }
 
 function renderInstMenu(open){
@@ -755,13 +788,15 @@ function renderInstMenu(open){
   const hits = instMatches(instQuery);
   instActive = Math.min(instActive, Math.max(hits.length - 1, 0));
   const count = p => {
-    const n = new Set(p.teaches.map(t => t.id)).size;
-    return `${n} course${n === 1 ? '' : 's'}`;
+    const n = new Set(teachingOn(p).map(t => t.id)).size;
+    return `${n} course${n === 1 ? '' : 's'}${instDays.size ? ` on ${dayList()}` : ''}`;
   };
   menu.innerHTML = hits.length
     ? hits.map((p, i) => `<li role="option" id="inst-opt-${i}" data-inst="${esc(p.name)}" class="${i === instActive ? 'on' : ''}"
-        aria-selected="${i === instActive}"><span>${esc(p.name)}</span><span class="n">${count(p)}</span></li>`).join('')
-    : `<li class="none">No one by that name teaches ${esc(TERM.label)}</li>`;
+        aria-selected="${i === instActive}"><span>${esc(p.name)}</span><span class="n">${esc(count(p))}</span></li>`).join('')
+    : `<li class="none">${instDays.size
+        ? `No one by that name teaches on ${esc(dayList(true))}`
+        : `No one by that name teaches ${esc(TERM.label)}`}</li>`;
   menu.hidden = false;
   input.setAttribute('aria-expanded', 'true');
   if(hits.length) input.setAttribute('aria-activedescendant', `inst-opt-${instActive}`);
@@ -781,36 +816,85 @@ function pickInstructor(name){
   renderInstructor();
 }
 
+function renderDayChips(){
+  const box = document.getElementById('inst-days');
+  box.innerHTML = SEARCH_DAYS.map(d =>
+    `<button class="chip ${instDays.has(d) ? 'on' : ''}" data-day="${d}" aria-pressed="${instDays.has(d)}" title="${instDays.has(d) ? `Stop filtering by ${DAY_NAMES[d]}` : `Only ${DAY_NAMES[d]}`}">${d}</button>`).join('')
+    + (instDays.size ? `<button class="lnk" data-day="" title="Show every day">any day</button>` : '');
+  box.querySelectorAll('[data-day]').forEach(b => b.onclick = () => {
+    const d = b.getAttribute('data-day');
+    if(!d) instDays.clear();
+    else instDays.has(d) ? instDays.delete(d) : instDays.add(d);
+    renderDayChips();
+    renderInstructor();
+    // Keep the dropdown honest if it's open.
+    if(!document.getElementById('inst-menu').hidden) renderInstMenu(true);
+  });
+}
+
+// Weekday, then start time — the order a timetable reads in.
+function firstMeeting(s){
+  const ms = (s.meetings || []).filter(m => !instDays.size || instDays.has(m.day));
+  const key = m => DAY_ORDER.indexOf(m.day) * 10000 + (mins(m.start) || 0);
+  return ms.length ? Math.min(...ms.map(key)) : Infinity;
+}
+
+function instRow({ id, s, with:others }, showWho){
+  const n = DB[id];
+  const timed = (s.meetings || []).length > 0;
+  const many = (SECTIONS[id] || []).length > 1;
+  const taking = plan.has(id) && (!many || plan.get(id) === s.section);
+  const bits = [modeLabel(s.mode), s.dates, others && others.length ? `with ${others.join(', ')}` : '', many ? `section ${s.section}` : '']
+    .filter(Boolean).map(esc).join(' · ');
+  const btn = !isOffered(id) ? '' : timed
+    ? `<button class="add ${taking ? 'in' : ''}" data-take="${esc(id)}|${esc(s.section)}" title="${taking ? 'In your plan — click to remove it' : 'Add this section to your plan'}">${taking ? '&#10003;' : '+'}</button>`
+    : `<button class="add ${plan.has(id) ? 'in' : ''}" data-add="${esc(id)}" title="${plan.has(id) ? 'Remove from plan' : 'Add to plan'}">${plan.has(id) ? '&minus;' : '+'}</button>`;
+  // In the by-day list the instructor is named, and clicking the name narrows to them.
+  const first = s.instructor ? INSTRUCTORS.find(x => x.name === splitNames(s.instructor)[0]) : null;
+  const who = showWho && s.instructor
+    ? ` · <span class="who"${first ? ` data-pick-inst="${esc(first.name)}" title="Only ${esc(first.name)}"` : ''}>${esc(s.instructor)}</span>` : '';
+  return `<div class="row" title="${esc(n ? n.title : id)}${bits ? ` · ${bits}` : ''}">
+    <span class="code" data-go="${esc(id)}">${esc(id)}${onlineMark(id, s)}</span>
+    <span class="nm" data-go="${esc(id)}">${esc(n ? n.title : '')}</span>
+    <span class="when">${esc(sectionTime(s))}${who}</span>
+    ${btn}
+  </div>`;
+}
+
 function renderInstructor(){
   document.getElementById('inst-count').textContent = `${INSTRUCTORS.length} teaching`;
   const box = document.getElementById('inst-result');
   const p = INSTRUCTORS.find(x => x.name === instructor);
-  if(!p){ box.innerHTML = ''; return; }
-  // Course order, then section; a part of a series is shown under its own code.
-  const rows = [...p.teaches].sort((a,b) => a.id.localeCompare(b.id) || String(a.s.section).localeCompare(String(b.s.section)));
-  box.innerHTML = `<div class="list">${rows.map(({ id, s, with:others }) => {
-    const n = DB[id];
-    const timed = (s.meetings || []).length > 0;
-    const many = (SECTIONS[id] || []).length > 1;
-    const taking = plan.has(id) && (!many || plan.get(id) === s.section);
-    const bits = [modeLabel(s.mode), s.dates, others.length ? `with ${others.join(', ')}` : '', many ? `section ${s.section}` : '']
-      .filter(Boolean).map(esc).join(' · ');
-    const btn = !isOffered(id) ? '' : timed
-      ? `<button class="add ${taking ? 'in' : ''}" data-take="${esc(id)}|${esc(s.section)}" title="${taking ? 'In your plan — click to remove it' : 'Add this section to your plan'}">${taking ? '&#10003;' : '+'}</button>`
-      : `<button class="add ${plan.has(id) ? 'in' : ''}" data-add="${esc(id)}" title="${plan.has(id) ? 'Remove from plan' : 'Add to plan'}">${plan.has(id) ? '&minus;' : '+'}</button>`;
-    return `<div class="row" title="${esc(n ? n.title : id)}${bits ? ` · ${bits}` : ''}">
-      <span class="code" data-go="${esc(id)}">${esc(id)}${onlineMark(id, s)}</span>
-      <span class="nm" data-go="${esc(id)}">${esc(n ? n.title : '')}</span>
-      <span class="when">${esc(sectionTime(s))}</span>
-      ${btn}
-    </div>`;
-  }).join('')}</div>
-  <p class="note" style="margin:7px 0 0">${esc(p.name)} teaches ${rows.length} section${rows.length === 1 ? '' : 's'} in ${esc(TERM.label)}. Click a course for its detail; <b>+</b> adds that section to your plan. Hover a row for mode and dates.</p>`;
+  const days = instDays.size ? ` on ${esc(dayList(true))}` : '';
+  let rows, note;
+  if(p){
+    rows = teachingOn(p);
+    // By day and time once a day is chosen; otherwise in course order.
+    rows.sort(instDays.size
+      ? (a,b) => firstMeeting(a.s) - firstMeeting(b.s) || a.id.localeCompare(b.id)
+      : (a,b) => a.id.localeCompare(b.id) || String(a.s.section).localeCompare(String(b.s.section)));
+    note = rows.length
+      ? `${esc(p.name)} teaches ${rows.length} section${rows.length === 1 ? '' : 's'}${days} in ${esc(TERM.label)}.`
+      : `${esc(p.name)} doesn't teach${days} in ${esc(TERM.label)} — ${p.teaches.length} section${p.teaches.length === 1 ? '' : 's'} on other days or at arranged times. Clear the day filter to see them.`;
+  } else if(instDays.size){
+    // Days alone: every section that meets then, whoever teaches it.
+    rows = [];
+    Object.entries(SECTIONS).forEach(([id, secs]) => secs.forEach(s => {
+      if((s.meetings || []).length && meetsOnDays(s)) rows.push({ id, s, with:[] });
+    }));
+    rows.sort((a,b) => firstMeeting(a.s) - firstMeeting(b.s) || a.id.localeCompare(b.id));
+    note = `${rows.length} section${rows.length === 1 ? '' : 's'} meet${rows.length === 1 ? 's' : ''}${days}. Type a last name to narrow to one instructor, or click a name in the list.`;
+  } else { box.innerHTML = ''; return; }
+
+  box.innerHTML = `${rows.length ? `<div class="list">${rows.map(r => instRow(r, !p)).join('')}</div>` : ''}
+  <p class="note" style="margin:7px 0 0">${note}${rows.length ? ' Click a course for its detail; <b>+</b> adds that section to your plan. Hover a row for mode and dates.' : ''}</p>`;
   box.querySelectorAll('[data-go]').forEach(el => {
     // A series part opens its series, which is where its own buttons live.
     const id = el.getAttribute('data-go');
     el.onclick = () => focus(isMember(id) ? seriesOf(id) : id);
   });
+  box.querySelectorAll('[data-pick-inst]').forEach(el =>
+    el.onclick = e => { e.stopPropagation(); pickInstructor(el.getAttribute('data-pick-inst')); });
   box.querySelectorAll('[data-take]').forEach(b =>
     b.onclick = e => {
       e.stopPropagation();
@@ -2196,6 +2280,7 @@ document.getElementById('search').addEventListener('input', e => {
   el.onchange = () => { extra[f] = el.checked; save(); paint(); renderAll(); };
 });
 document.querySelectorAll('[data-laptop]').forEach(el => el.innerHTML = LAPTOP);
+renderDayChips();
 {
   const sel = document.getElementById('sug-units');
   sel.innerHTML = UNIT_TARGETS.map(u => `<option value="${u}"${u === 16 ? ' selected' : ''}>${u} units${u === 12 ? ' (full-time)' : u === 20 ? ' (max)' : ''}</option>`).join('');
