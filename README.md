@@ -225,6 +225,20 @@ Picking someone lists every section they teach, in course order, with its time. 
 
 The list is built from the term's class file, so a new term brings its own instructors with no code change. A section taught by two people, such as *Parker / Namin*, appears under each of them, marked *with* the other. *Team* and *TBD* are not names, so they are left out. Clearing the box clears the instructor shown.
 
+#### Filter by day
+
+Under the box is a chip for each weekday that has classes this term. Saturday appears only when something meets on Saturday. Click one or more; choosing several days means any of them, so **Tu** + **Th** reads "on Tuesday or Thursday". **any day** clears them. The days combine with the name:
+
+| You choose | You get |
+|---|---|
+| An instructor | Every section they teach, in course order. |
+| An instructor and days | Only their sections on those days, in timetable order. If they teach none then, it says so and how many they teach on other days. |
+| Days only | Every section that meets on those days, in timetable order, each with its instructor. Click a name to narrow to that person. |
+
+The dropdown follows the days too. It lists only people teaching on the chosen days, with counts for those days, such as *Deng · 2 courses on Tu, Th*.
+
+Sections with an arranged time, such as internships and herb labs, meet on no particular day, so any day filter leaves them out.
+
 ### On a phone
 
 The three panes stack — left panel, graph, right panel — and the page scrolls. Selecting a course scrolls its detail into view for you, since the right panel is below the graph at that width. The graph is still the awkward part on a small screen; the course list is usually the faster way around.
