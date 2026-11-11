@@ -82,6 +82,8 @@ A **series** — a course taken several times, like the five-part CL600 internsh
 
 Click `+` on any ready course to add it to **My plan**. The detail panel also has an **Add to plan** button, which is how you add something you're taking with an override or alongside its prerequisite.
 
+Each plan row reads like the other lists: code, course name and units on the first line. The meeting time sits on the line beneath, or the section chooser where there's a choice to make. Click the code or name for the course's detail.
+
 The plan shows a week grid and points out where two courses share a time slot. It's section-aware: CM112 and AC301 both meet Monday at 9, but AC301 has a noon opening, so the grid quietly uses that one and says nothing.
 
 ### When two courses share a slot
@@ -123,6 +125,22 @@ Courses with arranged times (internships, observation, herb labs, exams) sit in 
 Blocks in the grid are clickable — click one for that course's detail in the right panel, the same as clicking its node or its row in the course list. Useful when a conflict is flagged and you want to see what each side of it actually needs.
 
 An amber ▲ next to a planned course means its prerequisites aren't marked complete. Not a block — concurrent enrolment is often legitimate here — just worth a second look.
+
+### Save your plan as a PDF
+
+**Save plan as PDF**, under **My plan**, opens a clean, printable copy of your plan:
+
+- **Header:** the term, total units and load (full-time, part-time), the date, and the schedule it's based on.
+- **Course table:** each course with its section, time, part-term dates, instructor and mode (online or in person), plus the total.
+  - A course you haven't picked a section for shows the one the week grid is using, marked *not yet chosen*.
+  - A course whose prerequisites aren't marked complete is flagged *check prereqs*.
+- **Week grid:** at full size, each block labelled with its time. Courses with arranged times (internships, herb labs) are listed beneath it.
+- **Worth checking:** any time clashes, worded as in the plan panel, and any courses still short of prerequisites.
+- **Registration:** the term's registration dates.
+
+Click **Print or save as PDF** and choose **Save as PDF** as the printer to keep it as a file. Only the plan prints, in colour, and the file is named after it, for example *Spring 2027 plan.pdf*. Nothing is uploaded, and nothing needs installing.
+
+This is a copy, not a backup. It can't be restored. To move your progress between browsers, use **Back up to file** (see [Saving your progress](#saving-your-progress)).
 
 ### Suggest a term
 
@@ -168,6 +186,16 @@ Open it for the parts. Each lists its own sections, instructor and mode, and car
 
 Which courses form a series is written into the data, not guessed from the course code — see [Maintaining it for a future term](#maintaining-it-for-a-future-term).
 
+### Online or in person
+
+A small **laptop** beside a course means it's delivered via Zoom, the same symbol the printed schedule uses. In person is the default, so it carries no mark.
+
+Delivery mode belongs to a section, not a course, and some courses have one of each. HM110 meets in person on Monday and online on Friday. A course like that gets a **faded** laptop, and hovering it says which sections are online.
+
+Where the tool knows which section you mean, the mark follows that section. That covers each row under **Sections** in the course detail, each block in the week grid, an instructor's section list, and a plan row once you've chosen a section. Everywhere else it describes the course as a whole: the ready list, the course list, the detail heading, and the parts of a series.
+
+The mark isn't drawn on the graph itself, where it would crowd the labels.
+
 ### Browse or search the course list
 
 The right panel has two layers. By default it lists every course the selected goal requires, sorted by code, with a status mark against each: green ✓ done, green ○ ready to take, grey ○ still blocked. Change the goal and the list changes with it. Click any row for that course's detail — the same panel you get by clicking its node — and **← All courses** goes back.
@@ -175,6 +203,24 @@ The right panel has two layers. By default it lists every course the selected go
 Searching filters that list. Type a partial code, a word from a title, or a track name and you get everything close to it; when only one course matches, it opens that course's detail directly instead of making you click a list of one.
 
 Search is scoped to the selected goal, because a course outside the goal has no node on the graph to select. If something you expect is missing, switch to **Whole program**.
+
+### Find an instructor
+
+**Find an instructor**, under the course search, lists everyone teaching this term. Click the box and the full list opens, sorted by last name, with how many courses each person teaches. Type part of a last name to narrow it:
+
+- *De* finds DeStefano and Deng.
+- *Li* finds M. D. Li and Lin.
+- *Mal* finds Plymale-Mallory: each part of a hyphenated name counts.
+- Capitals don't matter.
+
+Use ↑ / ↓ and Enter, or click a name.
+
+Picking someone lists every section they teach, in course order, with its time. Hover a row for its mode and part-term dates.
+
+- **Click a course** to open its detail. An internship part opens its series.
+- **+** adds that exact section to **My plan**, and **✓** means it's already there. Click ✓ to take the course back out. These buttons stay in step with the plan, however you change it.
+
+The list is built from the term's class file, so a new term brings its own instructors with no code change. A section taught by two people, such as *Parker / Namin*, appears under each of them, marked *with* the other. *Team* and *TBD* are not names, so they are left out. Clearing the box clears the instructor shown.
 
 ### On a phone
 

@@ -164,11 +164,37 @@
   /* Under "Needs", a row with no qualifier is a plain hard prerequisite; only
      the exceptions — concurrent, one of — have to say so. */
   .row .qual{flex:none;font-size:11px;color:var(--ink-3);white-space:nowrap}
+  /* My plan: the name on the first line like every other list; the time, or the
+     section chooser where there is a choice, on a line of its own beneath. */
+  .row.prow{flex-wrap:wrap;row-gap:2px}
+  #plan{max-height:300px}
+  .row.prow .psub{flex-basis:100%;font-size:11.5px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .row.prow .psub .pick{max-width:100%;width:100%}
   /* Rows in the ready list are tinted by how much the course unblocks: the
      warmer the row, the more of what is left depends on it. Full-bleed, so
      the negative margins cancel the list's own padding. */
   .row.lev{margin:0 -10px;padding-left:10px;padding-right:10px}
   .empty{font-size:12.5px;color:var(--ink-3);font-style:italic;padding:4px 0}
+  /* Instructor search: a type-to-filter dropdown over everyone teaching this term. */
+  .olm{display:inline-flex;align-items:center;margin-left:4px;color:var(--ink-2);vertical-align:-1px;flex:none}
+  .olm svg{width:13px;height:10px;display:block}
+  .olm.part{opacity:.45}
+  .blk .olm{color:inherit;margin-left:2px}
+  .det h3 .olm svg{width:15px;height:11px}
+  .combo{position:relative}
+  .menu{
+    position:absolute;left:0;right:0;top:100%;z-index:20;margin:4px 0 0;padding:4px;list-style:none;
+    max-height:260px;overflow-y:auto;background:var(--panel);
+    border:1px solid var(--rule-2);border-radius:7px;box-shadow:0 6px 20px rgba(0,0,0,.10);
+  }
+  .menu[hidden]{display:none}
+  .menu li{display:flex;justify-content:space-between;gap:8px;padding:5px 8px;border-radius:5px;cursor:pointer;font-size:12.5px}
+  .menu li.on{background:var(--accent-soft)}
+  .menu li .n{color:var(--ink-3);white-space:nowrap}
+  .menu li.none{cursor:default;color:var(--ink-3);font-style:italic}
+  #inst-result .list{margin-top:8px}
+  #inst-result .row{align-items:center}
+  #inst-result .when{flex:none;font-size:11.5px;color:var(--ink-2);white-space:nowrap}
   .det h3{font-size:15px;margin:0 0 2px;font-weight:600}
   .det .dsub{font-size:12.5px;color:var(--ink-2);margin-bottom:12px}
   .pill{
@@ -215,6 +241,7 @@
   }
   .r-bar{display:flex;gap:8px;justify-content:flex-end;margin-bottom:6px}
   .r-bar .btn{width:auto;padding:7px 14px;margin:0}
+  .r-bar [hidden]{display:none}
   .r-bar .btn[disabled]{opacity:.45;cursor:default;filter:none}
   #report-body h1{font-size:20px;margin:0 0 4px}
   #report-body h2{font-size:14px;margin:20px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--rule)}
@@ -228,6 +255,16 @@
   .r-list{margin:0;padding-left:18px;font-size:12.5px}
   .r-list li{margin-bottom:3px}
   #report-body p{font-size:12.5px;margin:6px 0}
+  .r-table tfoot td{border-bottom:none;border-top:1px solid var(--rule-2)}
+  /* The week grid at reading size, labelled with times, for the printed plan. */
+  .r-week{margin-top:4px}
+  .r-week .wk-body{height:420px}
+  .r-week .wk-head span{font-size:11px}
+  .r-week .wk-hours{width:30px}
+  .r-week .wk-head span:first-child{width:30px}
+  .r-week .wk-hours i{font-size:10px}
+  .r-week .blk{font-size:10px;cursor:default;line-height:1.2}
+  .r-week .blk:hover{box-shadow:none}
   .r-foot{margin-top:20px !important;color:var(--ink-3);font-size:11.5px !important}
   @media print{
     body.reporting{height:auto;overflow:visible;background:#fff}
@@ -235,7 +272,9 @@
     body.reporting .report{position:static;background:none;padding:0;display:block;overflow:visible}
     body.reporting .sheet{box-shadow:none;border-radius:0;max-width:none;padding:0}
     body.reporting .r-bar{display:none}
-    .r-table tr{break-inside:avoid}
+    .r-table tr, .r-week{break-inside:avoid}
+    /* Keep the track colours on paper; browsers drop backgrounds by default. */
+    body.reporting .sheet *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   }
   .tick{color:var(--accent);font-weight:600}
   .cross{color:var(--ink-3)}
@@ -284,6 +323,7 @@
       <div id="plan-status"></div>
       <div class="wk" id="week"></div>
       <p class="note" style="margin:8px 0 0">Add courses with <b>+</b> from the list above or from any course's detail panel. Times come from this term's schedule; where a course has two sections, the grid shows a combination that works.</p>
+      <button class="mini" id="plan-pdf" style="width:100%;margin-top:10px" title="Open a printable copy of your plan; choose Save as PDF in the print dialog to keep it as a file">Save plan as PDF</button>
       <div class="sug">
         <select id="sug-units" title="How many units to aim for this term"></select>
         <button class="mini" id="suggest" title="Propose courses for this term from what you've completed and your goal">Suggest a term</button>
@@ -318,10 +358,19 @@
       <h2>Find a course</h2>
       <input type="search" id="search" placeholder="Code or title — e.g. HM210, pathophys" autocomplete="off">
     </div>
+    <div class="sec">
+      <h2>Find an instructor <span id="inst-count" class="tally"></span></h2>
+      <div class="combo">
+        <input type="search" id="inst-search" placeholder="Last name — e.g. Deng, Namin" autocomplete="off"
+          role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="inst-menu">
+        <ul id="inst-menu" class="menu" role="listbox" hidden></ul>
+      </div>
+      <div id="inst-result"></div>
+    </div>
     <div class="sec" id="browse">
       <h2>Courses <span id="browse-count" class="tally"></span></h2>
       <div class="list tall" id="courselist"></div>
-      <p class="note" style="margin:7px 0 0">Everything the selected goal requires. Click one for its detail. <span class="tick">✓</span> done, <span class="tick">○</span> ready, <span class="cross">○</span> blocked.</p>
+      <p class="note" style="margin:7px 0 0">Everything the selected goal requires. Click one for its detail. <span class="tick">✓</span> done, <span class="tick">○</span> ready, <span class="cross">○</span> blocked. <span class="olm" data-laptop></span> online (faded: only some sections); no mark means in person.</p>
     </div>
     <div class="sec det" id="detail"></div>
     <div class="sec">
@@ -604,6 +653,38 @@ function modeLabel(m){
 /* A series lists its parts, each with its own sections, instructor and mode.
    This is where you choose which one you are taking — the series itself is
    never marked complete or planned directly. */
+/* ---- Online mark -----------------------------------------------------------
+   A small laptop beside anything delivered via Zoom, the same glyph the printed
+   schedule uses. In person is the default and carries no mark. Mode belongs to
+   a section, so a course whose sections differ gets a faded laptop and a
+   tooltip naming which ones are online. Hybrid is not marked: it is neither. */
+const LAPTOP = '<svg viewBox="0 0 16 12" aria-hidden="true"><rect x="2.5" y="1" width="11" height="7.5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M.8 10.8h14.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+const olm = (title, part) =>
+  `<span class="olm${part ? ' part' : ''}" role="img" aria-label="${esc(title)}" title="${esc(title)}">${LAPTOP}</span>`;
+
+// For one section (a class-file section or a solver slot — both carry .mode),
+// pass it as `sec`. Without it, the mark describes the course as a whole.
+function onlineMark(id, sec){
+  if(sec !== undefined) return sec && sec.mode === 'online' ? olm('Online — delivered via Zoom') : '';
+  const parts = isSeries(id) ? membersOf(id) : [id];
+  const all = [];
+  parts.forEach(m => (SECTIONS[m] || []).forEach(s => all.push({ m, s })));
+  const on = all.filter(x => x.s.mode === 'online');
+  if(!on.length) return '';
+  if(on.length === all.length) return olm('Online — delivered via Zoom');
+  const which = on.map(x => isSeries(id) ? x.m : `section ${x.s.section}`);
+  return olm(`Partly online: ${which.join(', ')} online, the rest in person`, true);
+}
+// The plan knows which section it means once one is chosen, or when there is
+// only one; otherwise it speaks for the course.
+function planMark(id){
+  const secs = SECTIONS[id] || [];
+  const pick = plan.get(id);
+  if(secs.length === 1) return onlineMark(id, secs[0]);
+  if(pick != null) return onlineMark(id, secs.find(s => s.section === pick) || null);
+  return onlineMark(id);
+}
+
 function seriesBlock(sid){
   const req = SERIES[sid].required || membersOf(sid).length;
   const have = seriesDone(sid);
@@ -618,7 +699,7 @@ function seriesBlock(sid){
         return bits.join(' · ');
       }).join(' | ') : `not offered ${esc(TERM.label)}`;
       return `<div class="row">
-        <span class="code">${statusMark(m)} ${m}</span>
+        <span class="code">${statusMark(m)} ${m}${runs ? onlineMark(m) : ''}</span>
         <span class="nm">${when}</span>
         <button class="add ${done.has(m)?'in':''}" data-done="${m}" title="${done.has(m)?'Mark not completed':'Mark completed'}">&#10003;</button>
         ${done.has(m) ? ''
@@ -628,6 +709,119 @@ function seriesBlock(sid){
       </div>`;
     }).join('')}</div>
     <p class="note" style="margin:7px 0 0">All ${req} parts are required. Anything that needs ${sid} unlocks only when every part is complete.</p>`;
+}
+
+/* ---- Instructor search ----------------------------------------------------
+   Everyone teaching this term, built from the class file, so a new term brings
+   its own list. A shared section ("Parker / Namin", "Luca & Team") is listed
+   under each named person; "Team" and "TBD" are not people and are dropped.
+   Matching goes by last name: the last word of the name, and each part of a
+   hyphenated one, so "Mal" finds Plymale-Mallory and "Li" finds M. D. Li. */
+const INSTRUCTORS = (() => {
+  const people = new Map();   // display name -> { name, last, parts, teaches:[{ id, s, with }] }
+  Object.entries(SECTIONS).forEach(([id, secs]) => secs.forEach(s => {
+    if(!s.instructor) return;
+    const names = String(s.instructor).split(/\s*(?:\/|&|,|\band\b)\s*/i)
+      .map(x => x.trim()).filter(x => x && !/^(team|tbd|tba|staff)$/i.test(x));
+    names.forEach(name => {
+      if(!people.has(name)){
+        const last = name.split(/\s+/).pop();
+        people.set(name, { name, last, parts:last.toLowerCase().split('-'), teaches:[] });
+      }
+      people.get(name).teaches.push({ id, s, with:names.filter(o => o !== name) });
+    });
+  }));
+  return [...people.values()].sort((a,b) =>
+    a.last.localeCompare(b.last) || a.name.localeCompare(b.name));
+})();
+
+let instructor = null;      // display name of the instructor being shown
+let instQuery = '';
+let instActive = 0;         // highlighted row in the dropdown
+
+function instMatches(q){
+  q = q.trim().toLowerCase();
+  if(!q) return INSTRUCTORS;
+  const byLast = INSTRUCTORS.filter(p =>
+    p.last.toLowerCase().startsWith(q) || p.parts.some(x => x.startsWith(q)));
+  // Fall back to anywhere in the name, for a typo-free partial like "efan".
+  return byLast.length ? byLast : INSTRUCTORS.filter(p => p.name.toLowerCase().includes(q));
+}
+
+function renderInstMenu(open){
+  const input = document.getElementById('inst-search');
+  const menu = document.getElementById('inst-menu');
+  if(!open){ menu.hidden = true; input.setAttribute('aria-expanded', 'false'); return; }
+  const hits = instMatches(instQuery);
+  instActive = Math.min(instActive, Math.max(hits.length - 1, 0));
+  const count = p => {
+    const n = new Set(p.teaches.map(t => t.id)).size;
+    return `${n} course${n === 1 ? '' : 's'}`;
+  };
+  menu.innerHTML = hits.length
+    ? hits.map((p, i) => `<li role="option" id="inst-opt-${i}" data-inst="${esc(p.name)}" class="${i === instActive ? 'on' : ''}"
+        aria-selected="${i === instActive}"><span>${esc(p.name)}</span><span class="n">${count(p)}</span></li>`).join('')
+    : `<li class="none">No one by that name teaches ${esc(TERM.label)}</li>`;
+  menu.hidden = false;
+  input.setAttribute('aria-expanded', 'true');
+  if(hits.length) input.setAttribute('aria-activedescendant', `inst-opt-${instActive}`);
+  const on = menu.querySelector('li.on');
+  if(on) on.scrollIntoView({ block:'nearest' });
+  // mousedown, not click, so the input keeps focus long enough to register it.
+  menu.querySelectorAll('[data-inst]').forEach(li =>
+    li.onmousedown = e => { e.preventDefault(); pickInstructor(li.getAttribute('data-inst')); });
+}
+
+function pickInstructor(name){
+  instructor = name;
+  instQuery = name || '';
+  const input = document.getElementById('inst-search');
+  input.value = instQuery;
+  renderInstMenu(false);
+  renderInstructor();
+}
+
+function renderInstructor(){
+  document.getElementById('inst-count').textContent = `${INSTRUCTORS.length} teaching`;
+  const box = document.getElementById('inst-result');
+  const p = INSTRUCTORS.find(x => x.name === instructor);
+  if(!p){ box.innerHTML = ''; return; }
+  // Course order, then section; a part of a series is shown under its own code.
+  const rows = [...p.teaches].sort((a,b) => a.id.localeCompare(b.id) || String(a.s.section).localeCompare(String(b.s.section)));
+  box.innerHTML = `<div class="list">${rows.map(({ id, s, with:others }) => {
+    const n = DB[id];
+    const timed = (s.meetings || []).length > 0;
+    const many = (SECTIONS[id] || []).length > 1;
+    const taking = plan.has(id) && (!many || plan.get(id) === s.section);
+    const bits = [modeLabel(s.mode), s.dates, others.length ? `with ${others.join(', ')}` : '', many ? `section ${s.section}` : '']
+      .filter(Boolean).map(esc).join(' · ');
+    const btn = !isOffered(id) ? '' : timed
+      ? `<button class="add ${taking ? 'in' : ''}" data-take="${esc(id)}|${esc(s.section)}" title="${taking ? 'In your plan — click to remove it' : 'Add this section to your plan'}">${taking ? '&#10003;' : '+'}</button>`
+      : `<button class="add ${plan.has(id) ? 'in' : ''}" data-add="${esc(id)}" title="${plan.has(id) ? 'Remove from plan' : 'Add to plan'}">${plan.has(id) ? '&minus;' : '+'}</button>`;
+    return `<div class="row" title="${esc(n ? n.title : id)}${bits ? ` · ${bits}` : ''}">
+      <span class="code" data-go="${esc(id)}">${esc(id)}${onlineMark(id, s)}</span>
+      <span class="nm" data-go="${esc(id)}">${esc(n ? n.title : '')}</span>
+      <span class="when">${esc(sectionTime(s))}</span>
+      ${btn}
+    </div>`;
+  }).join('')}</div>
+  <p class="note" style="margin:7px 0 0">${esc(p.name)} teaches ${rows.length} section${rows.length === 1 ? '' : 's'} in ${esc(TERM.label)}. Click a course for its detail; <b>+</b> adds that section to your plan. Hover a row for mode and dates.</p>`;
+  box.querySelectorAll('[data-go]').forEach(el => {
+    // A series part opens its series, which is where its own buttons live.
+    const id = el.getAttribute('data-go');
+    el.onclick = () => focus(isMember(id) ? seriesOf(id) : id);
+  });
+  box.querySelectorAll('[data-take]').forEach(b =>
+    b.onclick = e => {
+      e.stopPropagation();
+      const [cid, sec] = b.getAttribute('data-take').split('|');
+      const many = (SECTIONS[cid] || []).length > 1;
+      if(plan.has(cid) && (!many || plan.get(cid) === sec)) togglePlan(cid);
+      else planSection(cid, many ? sec : null);
+      renderInstructor();
+    });
+  box.querySelectorAll('[data-add]').forEach(b =>
+    b.onclick = e => { e.stopPropagation(); togglePlan(b.getAttribute('data-add')); renderInstructor(); });
 }
 
 function sectionsBlock(id){
@@ -646,7 +840,7 @@ function sectionsBlock(id){
       if(modeLabel(s.mode)) bits.push(modeLabel(s.mode));
       const taking = plan.has(id) && pick === s.section;
       return `<div class="row" style="cursor:default">
-        <span class="code">${esc(sectionTime(s))}</span>
+        <span class="code">${esc(sectionTime(s))}${onlineMark(id, s)}</span>
         <span class="nm">${bits.length ? bits.join(' · ') : '—'}</span>
         ${timed ? `<button class="add ${taking?'in':''}" data-take="${id}|${esc(s.section)}"
             title="${taking ? 'Taking this one — click to leave the section open' : 'Take this section'}">${taking?'&#10003;':'+'}</button>` : ''}
@@ -1106,7 +1300,7 @@ function renderBrowse(){
     : `${list.length} course${list.length===1?'':'s'}`;
   box.innerHTML = list.length
     ? list.map(n => `<div class="row" data-go="${n.id}">
-        <span class="code">${browseMark(n.id)} ${n.id}</span>
+        <span class="code">${browseMark(n.id)} ${n.id}${onlineMark(n.id)}</span>
         <span class="nm">${isOffered(n.id) ? esc(n.title) : `${esc(n.title)} · ${isExternal(n.id) ? 'outside YSU' : 'not this term'}`}</span>
       </div>`).join('')
     : `<div class="empty">${query
@@ -1147,7 +1341,7 @@ function renderDetail(){
   box.innerHTML = `
     <button class="lnk" id="back" style="margin-bottom:10px">&larr; All courses</button>
     <h2>Course detail</h2>
-    <h3>${n.id} · ${esc(n.title)}</h3>
+    <h3>${n.id} · ${esc(n.title)}${onlineMark(n.id)}</h3>
     <div class="dsub">${n.units} unit${n.units===1?'':'s'} · ${esc(meetLabel(n.id))}</div>
     <span class="pill" style="background:${t.bg};border-color:${t.line};color:${t.ink}">${esc(t.name)}</span>
     ${done.has(n.id) ? '<span class="pill" style="background:#e1f5ee;border-color:#0f6e56;color:#04342C">completed</span>'
@@ -1454,18 +1648,109 @@ function renderReport(r){
   document.getElementById('report-apply').disabled = !r.ids.some(id => !plan.has(id));
 }
 
+/* The plan as a page to keep: what you're taking, when, with whom, and how,
+   the week grid, and anything worth a second look. Printing it — or choosing
+   "Save as PDF" in the print dialog — is how it leaves the browser; nothing is
+   uploaded and nothing needs installing. */
+function renderPlanSheet(){
+  const ids = [...plan.keys()].filter(id => DB[id]).sort((a,b) => a.localeCompare(b));
+  const src = TERM.source || {};
+  const cal = TERM.calendar || {};
+  const when = new Date().toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
+  const assign = assignSections(ids);
+  const units = ids.reduce((a,id) => a + DB[id].units, 0);
+  const pairs = clashPairs(ids);
+  const notReady = ids.filter(id => !done.has(id) && !ready(id));
+
+  const rows = ids.map(id => {
+    const n = DB[id];
+    const all = SECTIONS[id] || [];
+    const pick = plan.get(id);
+    // The section the student chose; else the one the grid uses; else, for a
+    // course that meets at an arranged time, its only listing.
+    const raw = (pick != null && all.find(s => s.section === pick))
+      // Same fallback as the week grid, so the table and the grid agree.
+      || (() => { const g = (assign && assign[id]) || optionsFor(id)[0]; return g ? all.find(s => s.section === g.section) : null; })()
+      || (all.length === 1 ? all[0] : null);
+    const time = raw ? sectionTime(raw) : `${all.length} sections — none chosen`;
+    const secNote = all.length > 1 && raw
+      ? ` <span class="r-dim">(section ${esc(raw.section)}${pick == null ? ', not yet chosen' : ''})</span>` : '';
+    const mode = raw ? modeLabel(raw.mode) : [...new Set(all.map(s => modeLabel(s.mode)))].join(' / ');
+    return `<tr>
+      <td class="r-code">${esc(id)}</td>
+      <td>${esc(n.title)}${notReady.includes(id) ? ' <span class="flag" title="Prerequisites not yet marked complete">check prereqs</span>' : ''}</td>
+      <td class="r-num">${n.units}</td>
+      <td>${esc(time)}${secNote}${raw && raw.dates ? `<br><span class="r-dim">${esc(raw.dates)}</span>` : ''}</td>
+      <td>${esc((raw && raw.instructor) || (raw ? 'TBD' : [...new Set(all.map(s => s.instructor).filter(Boolean))].join(' / ') || 'TBD'))}</td>
+      <td>${esc(mode)}${raw ? onlineMark(id, raw) : onlineMark(id)}</td>
+    </tr>`;
+  }).join('');
+
+  const grid = weekGrid(ids, assign, true);
+  const untimed = ids.filter(id => !(SLOTS[id] || []).length);
+  const regs = Array.isArray(cal.registration) ? cal.registration : [];
+  const checks = [
+    ...pairs.map(([a,b]) => overlapLine(a, b)),
+    ...(!pairs.length && !assign ? ['No single set of sections avoids every overlap; the grid shows one arrangement.'] : []),
+    ...(notReady.length ? [`Prerequisites not yet marked complete for ${notReady.map(esc).join(', ')}. That can be fine — some are taken concurrently — but check before you register.`] : [])
+  ];
+
+  document.getElementById('report').setAttribute('aria-label', 'My plan');
+  document.getElementById('report-body').innerHTML = `
+    <h1>${esc(TERM.label)} — my plan</h1>
+    <p class="r-meta">${ids.length} course${ids.length===1?'':'s'} · <b>${units} units</b>, ${esc(loadLine(units))} · Saved ${esc(when)}</p>
+    <p class="r-meta">From ${esc(src.document || 'the term schedule')}${src.version ? `, version ${esc(src.version)}` : ''}${cal.range ? ` · Term ${esc(cal.range)}` : ''}${cal.addDrop ? ` · ${esc(cal.addDrop)}` : ''}</p>
+
+    ${ids.length ? `<h2>Courses</h2>
+    <table class="r-table">
+      <thead><tr><th>Course</th><th>Title</th><th>Units</th><th>When</th><th>Instructor</th><th>Mode</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr><td></td><td><b>Total</b></td><td class="r-num"><b>${units}</b></td><td colspan="3"></td></tr></tfoot>
+    </table>` : '<p>Your plan is empty. Add courses with <b>+</b>, then save it here.</p>'}
+
+    ${grid ? `<h2>Week</h2><div class="wk on r-week">${grid}</div>` : ''}
+    ${untimed.length ? `<p class="r-dim">Not on the grid, because they meet at an arranged time: ${untimed.map(esc).join(', ')}.</p>` : ''}
+
+    <h2>Worth checking</h2>
+    ${checks.length ? `<ul class="r-list">${checks.map(c => `<li>${c}</li>`).join('')}</ul>` : '<p>Nothing overlaps, and every prerequisite is marked complete.</p>'}
+
+    ${regs.length ? `<h2>Registration</h2><ul class="r-list">${regs.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+
+    <p class="r-foot">Made with the Yo San prerequisite explorer from the courses marked complete in this browser. A planning aid, not a registration: enrol through the university, and check with an academic counselor first.</p>`;
+}
+
+function showSheet(kind){
+  const box = document.getElementById('report');
+  document.getElementById('report-apply').hidden = kind !== 'suggest';
+  box.hidden = false;
+  box.dataset.kind = kind;
+  document.body.classList.add('reporting');
+  box.querySelector('.r-close').focus();
+}
 function openReport(){
   const target = +document.getElementById('sug-units').value || 16;
   lastSuggestion = suggestTerm(target);
+  document.getElementById('report').setAttribute('aria-label', 'Suggested courses');
   renderReport(lastSuggestion);
-  const box = document.getElementById('report');
-  box.hidden = false;
-  document.body.classList.add('reporting');
-  box.querySelector('.r-close').focus();
+  showSheet('suggest');
+}
+function openPlanSheet(){
+  renderPlanSheet();
+  showSheet('plan');
 }
 function closeReport(){
   document.getElementById('report').hidden = true;
   document.body.classList.remove('reporting');
+}
+// The PDF takes its file name from the page title, so name it for what it is
+// while the print dialog is open.
+function printSheet(){
+  const kind = document.getElementById('report').dataset.kind;
+  const was = document.title;
+  document.title = `${TERM.label} ${kind === 'plan' ? 'plan' : 'suggested courses'}`;
+  const restore = () => { document.title = was; window.removeEventListener('afterprint', restore); };
+  window.addEventListener('afterprint', restore);
+  window.print();
 }
 // Put the suggested courses in the plan, on the sections the report names.
 function applySuggestion(){
@@ -1562,9 +1847,19 @@ const [DAY_START, DAY_END] = (() => {
 
 function renderWeek(ids, assign){
   const wk = document.getElementById('week');
-  const timed = ids.filter(id => optionsFor(id).length);
-  if(!timed.length){ wk.className = 'wk'; wk.innerHTML = ''; return; }
+  const html = weekGrid(ids, assign);
+  if(!html){ wk.className = 'wk'; wk.innerHTML = ''; return; }
   wk.className = 'wk on';
+  wk.innerHTML = html;
+  wk.querySelectorAll('[data-go]').forEach(el =>
+    el.onclick = () => focus(el.getAttribute('data-go')));
+}
+
+// The week grid as markup, shared by the plan panel and the printable plan.
+// `long` labels each block with its time as well as its code, for paper.
+function weekGrid(ids, assign, long){
+  const timed = ids.filter(id => optionsFor(id).length);
+  if(!timed.length) return '';
   const span = DAY_END - DAY_START;
   const hours = [];
   for(let h = DAY_START/60; h <= DAY_END/60 - 1; h += 2)
@@ -1582,17 +1877,15 @@ function renderWeek(ids, assign){
       const bad = here.some(q => q !== b && timesClash(b.t, q.t));
       const who = b.sec.instructor ? ` · ${esc(b.sec.instructor)}` : '';
       const which = (SLOTS[b.id]||[]).length > 1 ? ` · section ${esc(b.sec.section)}` : '';
-      return `<div class="blk ${bad?'clash':''}" data-go="${b.id}" style="top:${100*(b.t.a-DAY_START)/span}%;height:${100*(b.t.b-b.t.a)/span}%;background:${t.bg};border-color:${t.line};color:${t.ink}" title="${b.id} · ${esc(DB[b.id].title)}${which}${who} — click for detail">${b.id}</div>`;
+      return `<div class="blk ${bad?'clash':''}" data-go="${b.id}" style="top:${100*(b.t.a-DAY_START)/span}%;height:${100*(b.t.b-b.t.a)/span}%;background:${t.bg};border-color:${t.line};color:${t.ink}" title="${b.id} · ${esc(DB[b.id].title)}${which}${who} — click for detail">${b.id}${onlineMark(b.id, b.sec)}${long ? `<br>${fmt(b.t.a)}-${fmt(b.t.b)}` : ''}</div>`;
     }).join('') + `</div>`;
   }).join('');
-  wk.innerHTML =
-    `<div class="wk-head"><span></span>${DAYS.map(d => `<span>${d}</span>`).join('')}</div>
+  return `<div class="wk-head"><span></span>${DAYS.map(d => `<span>${d}</span>`).join('')}</div>
      <div class="wk-body"><div class="wk-hours">${hours.join('')}</div><div class="wk-cols">${cols}</div></div>`;
-  wk.querySelectorAll('[data-go]').forEach(el =>
-    el.onclick = () => focus(el.getAttribute('data-go')));
 }
 
 function renderPlan(){
+  renderInstructor();   // its + / ✓ buttons mirror the plan
   const ids = [...plan.keys()].filter(id => DB[id]);
   const box = document.getElementById('plan');
   const status = document.getElementById('plan-status');
@@ -1622,12 +1915,13 @@ function renderPlan(){
            ${secs.map(s => `<option value="${esc(s.section)}"${pick === s.section ? ' selected' : ''}>${esc(sectionSummary(s))}</option>`).join('')}
          </select>`
       : '';
-    return `<div class="row ${inClash.has(id)?'bad':''}">
-      <span class="code" data-go="${id}">${id}</span>
-      <span class="nm">${chooser ? `${n.units}u` : `${esc(meetLabel(id))} · ${n.units}u`}</span>
-      ${chooser}
+    return `<div class="row prow ${inClash.has(id)?'bad':''}">
+      <span class="code" data-go="${id}">${id}${planMark(id)}</span>
+      <span class="nm" data-go="${id}">${esc(n.title)}</span>
+      <span class="qual">${n.units}u</span>
       ${notReady ? '<span class="warn-dot" title="Prerequisites not yet marked complete">&#9650;</span>' : ''}
       <button class="add in" data-drop="${id}" title="Remove from plan">&times;</button>
+      <div class="psub">${chooser || esc(meetLabel(id))}</div>
     </div>`;
   }).join('');
 
@@ -1698,7 +1992,7 @@ function renderReady(){
   const max = list.length ? list[0].i.count : 0;
   document.getElementById('ready').innerHTML = list.length
     ? list.map(({n,i}) => `<div class="row lev" style="${levStyle(i.count, max)}" title="${levTitle(i.count)}">
-        <span class="code" data-go="${n.id}">${n.id}</span>
+        <span class="code" data-go="${n.id}">${n.id}${onlineMark(n.id)}</span>
         <span class="nm" data-go="${n.id}">${esc(n.title)}</span>
         ${isSeries(n.id)
           ? `<button class="add" data-go="${n.id}" title="${membersOf(n.id).length} parts — open it to choose one">&rsaquo;</button>`
@@ -1862,6 +2156,32 @@ cy.on('tap','node', e => {
 });
 cy.on('tap', e => { if(e.target === cy) focus(null); });
 
+{
+  const input = document.getElementById('inst-search');
+  input.addEventListener('focus', () => renderInstMenu(true));
+  input.addEventListener('click', () => renderInstMenu(true));
+  input.addEventListener('input', () => {
+    instQuery = input.value;
+    instActive = 0;
+    // Clearing the box clears the instructor shown.
+    if(!instQuery.trim() && instructor){ instructor = null; renderInstructor(); }
+    renderInstMenu(true);
+  });
+  input.addEventListener('keydown', e => {
+    const hits = instMatches(instQuery);
+    if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+      e.preventDefault();
+      if(hits.length) instActive = (instActive + (e.key === 'ArrowDown' ? 1 : -1) + hits.length) % hits.length;
+      renderInstMenu(true);
+    } else if(e.key === 'Enter'){
+      e.preventDefault();
+      if(hits[instActive]) pickInstructor(hits[instActive].name);
+    } else if(e.key === 'Escape'){
+      renderInstMenu(false);
+    }
+  });
+  input.addEventListener('blur', () => renderInstMenu(false));
+}
 document.getElementById('search').addEventListener('input', e => {
   query = e.target.value.trim().toLowerCase();
   const hits = matches();
@@ -1875,13 +2195,15 @@ document.getElementById('search').addEventListener('input', e => {
   const el = document.getElementById('req-'+f);
   el.onchange = () => { extra[f] = el.checked; save(); paint(); renderAll(); };
 });
+document.querySelectorAll('[data-laptop]').forEach(el => el.innerHTML = LAPTOP);
 {
   const sel = document.getElementById('sug-units');
   sel.innerHTML = UNIT_TARGETS.map(u => `<option value="${u}"${u === 16 ? ' selected' : ''}>${u} units${u === 12 ? ' (full-time)' : u === 20 ? ' (max)' : ''}</option>`).join('');
 }
 document.getElementById('suggest').onclick = openReport;
 document.getElementById('report-close').onclick = closeReport;
-document.getElementById('report-print').onclick = () => window.print();
+document.getElementById('report-print').onclick = printSheet;
+document.getElementById('plan-pdf').onclick = openPlanSheet;
 document.getElementById('report-apply').onclick = applySuggestion;
 document.getElementById('report').addEventListener('click', e => { if(e.target.id === 'report') closeReport(); });
 document.addEventListener('keydown', e => {
