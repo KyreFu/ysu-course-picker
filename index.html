@@ -234,12 +234,6 @@
   }
   .flag.ok{background:var(--accent-soft);border-color:#9FE1CB;color:#04342C}
   /* Term suggestions: a sheet over the app on screen, and the only thing printed. */
-  .sug{display:flex;gap:6px;margin-top:10px}
-  .sug select{
-    flex:1;min-width:0;padding:6px 4px;border-radius:6px;border:1px solid var(--rule-2);
-    background:var(--panel);color:var(--ink);font:inherit;font-size:12px;
-  }
-  .sug .mini{flex:1.4}
   .report{
     position:fixed;inset:0;z-index:50;background:rgba(22,33,31,.35);
     display:flex;justify-content:center;align-items:flex-start;overflow-y:auto;padding:24px 12px;
@@ -275,13 +269,25 @@
   .r-week .wk-hours i{font-size:10px}
   .r-week .blk{font-size:10px;cursor:default;line-height:1.2}
   .r-week .blk:hover{box-shadow:none}
+  /* Suggestions: the on-screen half of the plan card, below the plan. */
+  .r-sug{margin-top:28px;padding-top:4px;border-top:2px solid var(--rule-2)}
+  .r-sug-head{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 12px}
+  .r-sug-head h2{border:none;padding:0;margin:14px 0 4px}
+  .r-sug-head label{font-size:12.5px}
+  .r-sel{font:inherit;font-size:12px;padding:3px 4px;border-radius:6px;border:1px solid var(--rule-2);background:var(--panel);color:var(--ink)}
+  #report-body h3, .r-sug h3{font-size:13px;margin:16px 0 4px}
+  .r-table tr.added td{background:var(--accent-soft)}
+  .r-act{white-space:nowrap;text-align:right;vertical-align:middle !important}
+  .r-act .add{display:inline-block;vertical-align:middle}
+  .r-added{color:var(--accent);font-size:11.5px;font-weight:600;margin-right:6px}
+  .r-why{font-size:12px}
   .r-foot{margin-top:20px !important;color:var(--ink-3);font-size:11.5px !important}
   @media print{
     body.reporting{height:auto;overflow:visible;background:#fff}
     body.reporting > *:not(#report){display:none !important}
     body.reporting .report{position:static;background:none;padding:0;display:block;overflow:visible}
     body.reporting .sheet{box-shadow:none;border-radius:0;max-width:none;padding:0}
-    body.reporting .r-bar{display:none}
+    body.reporting .r-bar, body.reporting .r-sug{display:none !important}
     .r-table tr, .r-week{break-inside:avoid}
     /* Keep the track colours on paper; browsers drop backgrounds by default. */
     body.reporting .sheet *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -333,12 +339,8 @@
       <div id="plan-status"></div>
       <div class="wk" id="week"></div>
       <p class="note" style="margin:8px 0 0">Add courses with <b>+</b> from the list above or from any course's detail panel. Times come from this term's schedule; where a course has two sections, the grid shows a combination that works.</p>
-      <button class="mini" id="plan-pdf" style="width:100%;margin-top:10px" title="Open a printable copy of your plan; choose Save as PDF in the print dialog to keep it as a file">Save plan as PDF</button>
-      <div class="sug">
-        <select id="sug-units" title="How many units to aim for this term"></select>
-        <button class="mini" id="suggest" title="Propose courses for this term from what you've completed and your goal">Suggest a term</button>
-      </div>
-      <p class="note" style="margin:6px 0 0">Builds a printable list of courses for this term, from what you've marked complete and the goal you've chosen, around anything already in your plan.</p>
+      <button class="mini" id="plan-card" style="width:100%;margin-top:10px" title="Open your plan as a page to print or save as PDF, with suggestions for this term underneath">Save plan &amp; see suggestions</button>
+      <p class="note" style="margin:6px 0 0">Opens your plan as a page to print or save as PDF. Suggestions for the rest of the term sit underneath, each with <b>+</b> to add it.</p>
     </div>
     <div class="sec">
       <h2>Non-course requirements</h2>
@@ -410,14 +412,14 @@
   </aside>
 </main>
 
-<div class="report" id="report" hidden role="dialog" aria-modal="true" aria-label="Suggested courses">
+<div class="report" id="report" hidden role="dialog" aria-modal="true" aria-label="My plan">
   <div class="sheet">
     <div class="r-bar">
-      <button class="btn" id="report-apply" title="Add every suggested course to My plan, on the sections listed">Add these to my plan</button>
       <button class="btn off" id="report-print">Print or save as PDF</button>
       <button class="btn off r-close" id="report-close">Close</button>
     </div>
     <div id="report-body"></div>
+    <div id="report-sug" class="r-sug"></div>
   </div>
 </div>
 
@@ -1665,73 +1667,6 @@ function loadLine(units){
 
 let lastSuggestion = null;
 
-function renderReport(r){
-  const goalName = (GOALS.find(g => g.id === goal) || {}).name || goal;
-  const src = TERM.source || {};
-  const cal = TERM.calendar || {};
-  const when = new Date().toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
-  const nm = id => esc(DB[id] ? DB[id].title : id);
-  const codeList = ids => ids.map(c => `${esc(c)}${DB[c] ? ` ${nm(c)}` : ''}`).join(', ');
-
-  const rows = r.ids.map(id => {
-    const n = DB[id], p = r.picked.get(id), sec = sectionFor(id, r.assign);
-    const time = sec && sec.times.length ? sec.times.map(t => `${t.day} ${fmt(t.a)}-${fmt(t.b)}`).join(', ') : 'No set time';
-    const many = (SECTIONS[id] || []).length > 1 ? ` <span class="r-dim">(section ${esc(sec.section)} of ${(SECTIONS[id]||[]).length})</span>` : '';
-    let why;
-    if(p.reason === 'plan') why = 'Already in your plan';
-    else if(p.series) why = `Part ${membersOf(p.series).indexOf(id) + 1} of ${membersOf(p.series).length} of ${esc(p.series)} ${nm(p.series)}`
-      + (p.count ? ` · ${p.count} remaining course${p.count===1?' waits':'s wait'} on the series` : '');
-    else if(n.units === 0) why = 'Benchmark exam you are now eligible for';
-    else if(p.count) why = `${p.count} remaining course${p.count===1?'':'s'} ${p.beyond ? 'in the programme' : 'toward your goal'} depend${p.count===1?'s':''} on it`;
-    else why = 'Nothing else waits on it; it fits your timetable';
-    const co = n.co.filter(c => !satisfied(c) && (r.picked.has(c) || (isSeries(c) && membersOf(c).some(m => r.picked.has(m)))));
-    if(co.length) why += ` · taken alongside ${co.map(esc).join(', ')}`;
-    if(p.beyond) why += ' · <span class="flag">beyond goal</span>';
-    return `<tr>
-      <td class="r-code">${esc(id)}</td>
-      <td>${nm(id)}</td>
-      <td class="r-num">${n.units}</td>
-      <td>${esc(time)}${many}${sec && sec.dates ? `<br><span class="r-dim">${esc(sec.dates)}</span>` : ''}</td>
-      <td>${esc((sec && sec.instructor) || 'TBD')}<br><span class="r-dim">${esc(modeLabel(sec && sec.mode))}</span></td>
-      <td>${why}</td>
-    </tr>`;
-  }).join('');
-
-  const passedRows = [...r.passed.entries()].map(([id, w]) => {
-    const reason = w.why === 'units' ? `Would take you past ${r.target} units (${w.units}u)`
-      : w.why === 'co' ? `Must be taken with ${codeList(w.with)}, which isn't in this set`
-      : `Every section overlaps ${codeList(w.with)}`;
-    return `<li><b>${esc(id)}</b> ${nm(id)} — ${reason}</li>`;
-  }).join('');
-
-  const regs = Array.isArray(cal.registration) ? cal.registration : [];
-  const notes = (TERM.notes || []).map(o => typeof o === 'string' ? o : o.text);
-  const timed = r.ids.filter(id => (SLOTS[id] || []).length);
-
-  document.getElementById('report-body').innerHTML = `
-    <h1>${esc(TERM.label)} — suggested courses</h1>
-    <p class="r-meta">Goal: <b>${esc(goalName)}</b> · Unit target: <b>${r.target}</b> · ${done.size} course${done.size===1?'':'s'} marked complete · Generated ${esc(when)}</p>
-    <p class="r-meta">From ${esc(src.document || 'the term schedule')}${src.version ? `, version ${esc(src.version)}` : ''}${cal.range ? ` · Term ${esc(cal.range)}` : ''}</p>
-
-    <h2>Suggested <span class="r-dim">· ${r.units} units, ${esc(loadLine(r.units))}</span></h2>
-    ${r.ids.length ? `<table class="r-table">
-      <thead><tr><th>Course</th><th>Title</th><th>Units</th><th>When</th><th>Instructor</th><th>Why</th></tr></thead>
-      <tbody>${rows}</tbody></table>`
-      : `<p>Nothing to suggest. Either nothing you're ready for runs this term, or the unit target is already met by your plan. Mark more courses complete, or raise the target.</p>`}
-    ${r.ids.length && !timed.length ? '' : r.ids.length ? '<p class="r-dim">No two suggested sections meet at the same time. Part-term courses are still treated as running all term, so this errs on the safe side.</p>' : ''}
-    ${r.units < r.target && r.ids.length ? `<p class="r-dim">${r.target - r.units} unit${r.target - r.units === 1 ? '' : 's'} short of the target: nothing else you're ready for fits alongside these.</p>` : ''}
-
-    ${passedRows ? `<h2>Also ready, but left out <span class="r-dim">· alternatives if you swap something</span></h2><ul class="r-list">${passedRows}</ul>` : ''}
-    ${r.notOffered.length ? `<h2>Ready, but not offered ${esc(TERM.label)}</h2><p>${codeList(r.notOffered)}</p>` : ''}
-    ${r.opens.length ? `<h2>Finishing these opens next</h2><p>${codeList(r.opens)}</p>` : ''}
-
-    ${regs.length ? `<h2>Registration</h2><ul class="r-list">${regs.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
-    ${notes.length ? `<h2>About this term's data</h2><ul class="r-list r-dim">${notes.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
-
-    <p class="r-foot">A planning aid, not advice from the university. It goes by the courses you've marked complete and by the schedule as transcribed. Prerequisites can only be waived by an approved Override Petition. Check with an academic counselor before you register.</p>`;
-  document.getElementById('report-apply').disabled = !r.ids.some(id => !plan.has(id));
-}
-
 /* The plan as a page to keep: what you're taking, when, with whom, and how,
    the week grid, and anything worth a second look. Printing it — or choosing
    "Save as PDF" in the print dialog — is how it leaves the browser; nothing is
@@ -1779,7 +1714,6 @@ function renderPlanSheet(){
     ...(notReady.length ? [`Prerequisites not yet marked complete for ${notReady.map(esc).join(', ')}. That can be fine — some are taken concurrently — but check before you register.`] : [])
   ];
 
-  document.getElementById('report').setAttribute('aria-label', 'My plan');
   document.getElementById('report-body').innerHTML = `
     <h1>${esc(TERM.label)} — my plan</h1>
     <p class="r-meta">${ids.length} course${ids.length===1?'':'s'} · <b>${units} units</b>, ${esc(loadLine(units))} · Saved ${esc(when)}</p>
@@ -1803,50 +1737,139 @@ function renderPlanSheet(){
     <p class="r-foot">Made with the Yo San prerequisite explorer from the courses marked complete in this browser. A planning aid, not a registration: enrol through the university, and check with an academic counselor first.</p>`;
 }
 
-function showSheet(kind){
+/* ---- The plan card --------------------------------------------------------
+   One card, opened from My plan. On top, the plan itself — the part that
+   prints. Underneath, suggestions for filling the rest of the term, each with
+   + to put it in the plan and, once it's there, a revert to take it back out.
+   The suggestions are worked out when the card opens or the target changes,
+   and then held still, so adding one doesn't reshuffle the rest under you. */
+function showSheet(){
   const box = document.getElementById('report');
-  document.getElementById('report-apply').hidden = kind !== 'suggest';
   box.hidden = false;
-  box.dataset.kind = kind;
   document.body.classList.add('reporting');
   box.querySelector('.r-close').focus();
-}
-function openReport(){
-  const target = +document.getElementById('sug-units').value || 16;
-  lastSuggestion = suggestTerm(target);
-  document.getElementById('report').setAttribute('aria-label', 'Suggested courses');
-  renderReport(lastSuggestion);
-  showSheet('suggest');
-}
-function openPlanSheet(){
-  renderPlanSheet();
-  showSheet('plan');
 }
 function closeReport(){
   document.getElementById('report').hidden = true;
   document.body.classList.remove('reporting');
 }
+function openPlanCard(){
+  refreshSuggestions();
+  renderPlanSheet();
+  showSheet();
+}
+function refreshSuggestions(){
+  const sel = document.getElementById('sug-units');
+  const target = (sel && +sel.value) || sugTarget;
+  sugTarget = target;
+  lastSuggestion = suggestTerm(target);
+  renderSuggestions(lastSuggestion);
+}
+let sugTarget = 16;
+
+// Redraw both halves after the plan changes from inside the card.
+function rerenderCard(){
+  renderPlanSheet();
+  renderSuggestions(lastSuggestion);
+}
+function addSuggested(id){
+  const r = lastSuggestion;
+  const sec = r && r.assign[id];
+  planSection(id, sec && (SECTIONS[id] || []).length > 1 ? sec.section : null);
+  rerenderCard();
+}
+function revertSuggested(id){
+  if(plan.has(id)) togglePlan(id);
+  rerenderCard();
+}
+
+function whyLine(r, id){
+  const n = DB[id], p = r.picked.get(id);
+  const nm = x => esc(DB[x] ? DB[x].title : x);
+  let why;
+  if(p.series) why = `Part ${membersOf(p.series).indexOf(id) + 1} of ${membersOf(p.series).length} of ${esc(p.series)} ${nm(p.series)}`
+    + (p.count ? ` · ${p.count} remaining course${p.count===1?' waits':'s wait'} on the series` : '');
+  else if(n.units === 0) why = 'Benchmark exam you are now eligible for';
+  else if(p.count) why = `${p.count} remaining course${p.count===1?'':'s'} ${p.beyond ? 'in the programme' : 'toward your goal'} depend${p.count===1?'s':''} on it`;
+  else why = 'Nothing else waits on it; it fits your timetable';
+  const co = n.co.filter(c => !satisfied(c) && (r.picked.has(c) || (isSeries(c) && membersOf(c).some(m => r.picked.has(m)))));
+  if(co.length) why += ` · taken alongside ${co.map(esc).join(', ')}`;
+  if(p.beyond) why += ' · <span class="flag">beyond goal</span>';
+  return why;
+}
+
+function renderSuggestions(r){
+  const box = document.getElementById('report-sug');
+  const goalName = (GOALS.find(g => g.id === goal) || {}).name || goal;
+  const nm = id => esc(DB[id] ? DB[id].title : id);
+  const codeList = ids => ids.map(c => `${esc(c)}${DB[c] ? ` ${nm(c)}` : ''}`).join(', ');
+  // Only what the card proposes; courses already in the plan sit above.
+  const ids = r.ids.filter(id => r.picked.get(id).reason === 'pick');
+  const planUnits = [...plan.keys()].filter(id => DB[id]).reduce((a,id) => a + DB[id].units, 0);
+  const added = ids.filter(id => plan.has(id));
+
+  const rows = ids.map(id => {
+    const n = DB[id], sec = sectionFor(id, r.assign);
+    const time = sec && sec.times.length ? sec.times.map(t => `${t.day} ${fmt(t.a)}-${fmt(t.b)}`).join(', ') : 'No set time';
+    const many = (SECTIONS[id] || []).length > 1 ? ` <span class="r-dim">(section ${esc(sec.section)} of ${(SECTIONS[id]||[]).length})</span>` : '';
+    const inPlan = plan.has(id);
+    const act = inPlan
+      ? `<span class="r-added">&#10003; Added</span><button class="add in" data-revert="${esc(id)}" title="Revert: take ${esc(id)} back out of your plan">&#8634;</button>`
+      : `<button class="add" data-suggest="${esc(id)}" title="Add ${esc(id)} to your plan${many ? ', on this section' : ''}">+</button>`;
+    return `<tr class="${inPlan ? 'added' : ''}">
+      <td class="r-code">${esc(id)}${sec ? onlineMark(id, sec) : onlineMark(id)}</td>
+      <td>${nm(id)}</td>
+      <td class="r-num">${n.units}</td>
+      <td>${esc(time)}${many}${sec && sec.dates ? `<br><span class="r-dim">${esc(sec.dates)}</span>` : ''}</td>
+      <td>${esc((sec && sec.instructor) || 'TBD')}</td>
+      <td class="r-why">${whyLine(r, id)}</td>
+      <td class="r-act">${act}</td>
+    </tr>`;
+  }).join('');
+
+  const passedRows = [...r.passed.entries()].map(([id, w]) => {
+    const reason = w.why === 'units' ? `would take you past ${r.target} units (${w.units}u)`
+      : w.why === 'co' ? `must be taken with ${codeList(w.with)}, which isn't in this set`
+      : `every section overlaps ${codeList(w.with)}`;
+    return `<li><b>${esc(id)}</b> ${nm(id)} — ${reason}</li>`;
+  }).join('');
+
+  const options = UNIT_TARGETS.map(u =>
+    `<option value="${u}"${u === r.target ? ' selected' : ''}>${u} units${u === 12 ? ' (full-time)' : u === 20 ? ' (max)' : ''}</option>`).join('');
+
+  box.innerHTML = `
+    <div class="r-sug-head">
+      <h2>Suggestions</h2>
+      <label class="r-dim">Fill my plan up to <select id="sug-units" class="r-sel">${options}</select></label>
+      <button class="lnk" id="sug-refresh" title="Work the suggestions out again around your plan as it is now">refresh</button>
+    </div>
+    <p class="r-meta">For <b>${esc(goalName)}</b>, from the ${done.size} course${done.size===1?'':'s'} you've marked complete. Each fits alongside your plan and the rest of this list.
+      <b>+</b> adds one to your plan; <b>&#8634;</b> takes it back out.${added.length ? ` ${added.length} added so far.` : ''}</p>
+    ${ids.length ? `<table class="r-table">
+      <thead><tr><th>Course</th><th>Title</th><th>Units</th><th>When</th><th>Instructor</th><th>Why</th><th></th></tr></thead>
+      <tbody>${rows}</tbody></table>`
+      : `<p>${planUnits >= r.target
+          ? `Your plan already has ${planUnits} units, at or above the ${r.target}-unit target. Raise the target to see more.`
+          : `Nothing else you're ready for runs this term and fits alongside your plan. Mark more courses complete, or change your goal.`}</p>`}
+    ${passedRows ? `<h3>Also ready, but left out</h3><ul class="r-list">${passedRows}</ul>` : ''}
+    ${r.notOffered.length ? `<h3>Ready, but not offered ${esc(TERM.label)}</h3><p>${codeList(r.notOffered)}</p>` : ''}
+    ${r.opens.length ? `<h3>Finishing these opens next</h3><p>${codeList(r.opens)}</p>` : ''}
+    <p class="r-foot">Suggestions go by the courses you've marked complete and the schedule as transcribed. Part-term courses are treated as running all term, so they err on the safe side. Prerequisites can only be waived by an approved Override Petition.</p>`;
+
+  box.querySelector('#sug-units').onchange = refreshSuggestions;
+  box.querySelector('#sug-refresh').onclick = refreshSuggestions;
+  box.querySelectorAll('[data-suggest]').forEach(b => b.onclick = () => addSuggested(b.getAttribute('data-suggest')));
+  box.querySelectorAll('[data-revert]').forEach(b => b.onclick = () => revertSuggested(b.getAttribute('data-revert')));
+}
+
 // The PDF takes its file name from the page title, so name it for what it is
-// while the print dialog is open.
+// while the print dialog is open. Only the plan prints; suggestions stay on screen.
 function printSheet(){
-  const kind = document.getElementById('report').dataset.kind;
   const was = document.title;
-  document.title = `${TERM.label} ${kind === 'plan' ? 'plan' : 'suggested courses'}`;
+  document.title = `${TERM.label} plan`;
   const restore = () => { document.title = was; window.removeEventListener('afterprint', restore); };
   window.addEventListener('afterprint', restore);
   window.print();
-}
-// Put the suggested courses in the plan, on the sections the report names.
-function applySuggestion(){
-  const r = lastSuggestion;
-  if(!r) return;
-  r.ids.forEach(id => {
-    if(plan.has(id)) return;
-    const sec = r.assign[id];
-    plan.set(id, sec && (SLOTS[id] || []).length > 1 ? sec.section : null);
-  });
-  save(); renderAll();
-  closeReport();
 }
 
 /* Two courses at the same hour are only really in each other's way if they run
@@ -2281,15 +2304,9 @@ document.getElementById('search').addEventListener('input', e => {
 });
 document.querySelectorAll('[data-laptop]').forEach(el => el.innerHTML = LAPTOP);
 renderDayChips();
-{
-  const sel = document.getElementById('sug-units');
-  sel.innerHTML = UNIT_TARGETS.map(u => `<option value="${u}"${u === 16 ? ' selected' : ''}>${u} units${u === 12 ? ' (full-time)' : u === 20 ? ' (max)' : ''}</option>`).join('');
-}
-document.getElementById('suggest').onclick = openReport;
+document.getElementById('plan-card').onclick = openPlanCard;
 document.getElementById('report-close').onclick = closeReport;
 document.getElementById('report-print').onclick = printSheet;
-document.getElementById('plan-pdf').onclick = openPlanSheet;
-document.getElementById('report-apply').onclick = applySuggestion;
 document.getElementById('report').addEventListener('click', e => { if(e.target.id === 'report') closeReport(); });
 document.addEventListener('keydown', e => {
   if(e.key === 'Escape' && !document.getElementById('report').hidden) closeReport();
