@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Yo San — prerequisite explorer, Fall 2026</title>
+<title>Yo San course planner</title>
 <style>
   :root{
     --ink:#16211f;
@@ -311,7 +311,7 @@
 <body>
 
 <header>
-  <h1>Prerequisite explorer</h1>
+  <h1>Yo San course planner</h1>
   <span class="meta" id="term-label"></span>
   <span class="meta" id="term-dates"></span>
   <span class="meta" style="margin-left:auto">Click any course to trace its chain. Progress saves in this browser only.</span>
@@ -1734,7 +1734,7 @@ function renderPlanSheet(){
 
     ${regs.length ? `<h2>Registration</h2><ul class="r-list">${regs.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
 
-    <p class="r-foot">Made with the Yo San prerequisite explorer from the courses marked complete in this browser. A planning aid, not a registration: enrol through the university, and check with an academic counselor first.</p>`;
+    <p class="r-foot">Made with the Yo San course planner from the courses marked complete in this browser. A planning aid, not a registration: enrol through the university, and check with an academic counselor first.</p>`;
 }
 
 /* ---- The plan card --------------------------------------------------------
@@ -2381,7 +2381,7 @@ function renderHeader(){
   document.getElementById('term-cal').innerHTML =
     rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('');
 
-  document.title = `Yo San — prerequisite explorer, ${TERM.label}`;
+  document.title = `Yo San course planner — ${TERM.label}`;
 }
 renderHeader();
 
