@@ -223,6 +223,46 @@
     background:var(--warn-soft);border:1px solid #e6d3ab;color:var(--warn);
   }
   .flag.ok{background:var(--accent-soft);border-color:#9FE1CB;color:#04342C}
+  /* Term suggestions: a sheet over the app on screen, and the only thing printed. */
+  .sug{display:flex;gap:6px;margin-top:10px}
+  .sug select{
+    flex:1;min-width:0;padding:6px 4px;border-radius:6px;border:1px solid var(--rule-2);
+    background:var(--panel);color:var(--ink);font:inherit;font-size:12px;
+  }
+  .sug .mini{flex:1.4}
+  .report{
+    position:fixed;inset:0;z-index:50;background:rgba(22,33,31,.35);
+    display:flex;justify-content:center;align-items:flex-start;overflow-y:auto;padding:24px 12px;
+  }
+  .report[hidden]{display:none}
+  .sheet{
+    background:var(--panel);border-radius:10px;max-width:900px;width:100%;
+    box-shadow:0 10px 40px rgba(0,0,0,.18);padding:22px 26px 26px;
+  }
+  .r-bar{display:flex;gap:8px;justify-content:flex-end;margin-bottom:6px}
+  .r-bar .btn{width:auto;padding:7px 14px;margin:0}
+  .r-bar .btn[disabled]{opacity:.45;cursor:default;filter:none}
+  #report-body h1{font-size:20px;margin:0 0 4px}
+  #report-body h2{font-size:14px;margin:20px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--rule)}
+  .r-meta{margin:0;font-size:12.5px;color:var(--ink-2)}
+  .r-dim{color:var(--ink-3);font-weight:400}
+  .r-table{width:100%;border-collapse:collapse;font-size:12.5px}
+  .r-table th{text-align:left;font-weight:600;color:var(--ink-2);border-bottom:1px solid var(--rule-2);padding:5px 6px}
+  .r-table td{border-bottom:1px solid var(--rule);padding:6px;vertical-align:top}
+  .r-code{font-weight:600;white-space:nowrap}
+  .r-num{text-align:right}
+  .r-list{margin:0;padding-left:18px;font-size:12.5px}
+  .r-list li{margin-bottom:3px}
+  #report-body p{font-size:12.5px;margin:6px 0}
+  .r-foot{margin-top:20px !important;color:var(--ink-3);font-size:11.5px !important}
+  @media print{
+    body.reporting{height:auto;overflow:visible;background:#fff}
+    body.reporting > *:not(#report){display:none !important}
+    body.reporting .report{position:static;background:none;padding:0;display:block;overflow:visible}
+    body.reporting .sheet{box-shadow:none;border-radius:0;max-width:none;padding:0}
+    body.reporting .r-bar{display:none}
+    .r-table tr{break-inside:avoid}
+  }
   .tick{color:var(--accent);font-weight:600}
   .cross{color:var(--ink-3)}
   @media (max-width:900px){
@@ -270,6 +310,11 @@
       <div id="plan-status"></div>
       <div class="wk" id="week"></div>
       <p class="note" style="margin:8px 0 0">Add courses with <b>+</b> from the list above or from any course's detail panel. Times come from this term's schedule; where a course has two sections, the grid shows a combination that works.</p>
+      <div class="sug">
+        <select id="sug-units" title="How many units to aim for this term"></select>
+        <button class="mini" id="suggest" title="Propose courses for this term from what you've completed and your goal">Suggest a term</button>
+      </div>
+      <p class="note" style="margin:6px 0 0">Builds a printable list of courses for this term, from what you've marked complete and the goal you've chosen, around anything already in your plan.</p>
     </div>
     <div class="sec">
       <h2>Non-course requirements</h2>
@@ -339,6 +384,17 @@
     </div>
   </aside>
 </main>
+
+<div class="report" id="report" hidden role="dialog" aria-modal="true" aria-label="Suggested courses">
+  <div class="sheet">
+    <div class="r-bar">
+      <button class="btn" id="report-apply" title="Add every suggested course to My plan, on the sections listed">Add these to my plan</button>
+      <button class="btn off" id="report-print">Print or save as PDF</button>
+      <button class="btn off r-close" id="report-close">Close</button>
+    </div>
+    <div id="report-body"></div>
+  </div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
@@ -1364,8 +1420,8 @@ function renderGoals(){
   });
 }
 
-function rankedReady(){
-  const s = scope();
+function rankedReady(){ return rankedFor(scope()); }
+function rankedFor(s){
   return Object.values(DB)
     // Not offered this term does not mean unfinishable: a student may have
     // taken it in an earlier term, so it still belongs here to be ticked off.
@@ -1406,6 +1462,202 @@ function clashPairs(ids){
     for(let j = i+1; j < ids.length; j++)
       if(conflicts(ids[i], ids[j])) out.push([ids[i], ids[j]]);
   return out;
+}
+
+/* ---- Term suggestions ----------------------------------------------------
+   Proposes a set of courses for this term from what the student has marked
+   done, the selected goal and a unit target. It is the ready list, read in its
+   own order, with three rules on top: a course has to run this term, it has to
+   fit alongside what is already picked without any section overlapping, and
+   its corequisites have to be done already or picked with it. Whatever is in
+   the plan is kept as it is and built around.
+   It proposes; it never changes progress or the plan unless the student asks. */
+const UNIT_TARGETS = [12, 14, 16, 18, 20];
+
+// A corequisite is met if it's finished, being taken alongside, or — for a
+// series such as the internships — already under way.
+function coMet(id, picked){
+  return DB[id].co.every(c => satisfied(c) || picked.has(c) ||
+    (isSeries(c) && (seriesDone(c) > 0 || membersOf(c).some(m => picked.has(m)))));
+}
+// The next part of a series that runs this term. One part per term: the
+// schedule offers parts as separate enrolments, usually in sequence.
+function nextMember(sid){
+  return membersOf(sid).find(m => !done.has(m) && hasClasses(m)) || null;
+}
+
+function suggestTerm(target){
+  const s = scope();
+  const picked = new Map();     // course id -> { reason, count, beyond }
+  [...plan.keys()].filter(id => DB[id]).forEach(id => picked.set(id, { reason:'plan' }));
+  let units = [...picked.keys()].reduce((a,id) => a + DB[id].units, 0);
+  const passed = new Map();     // course or series id -> why it was left out
+
+  const goalList = rankedFor(s).map(r => ({ ...r, beyond:false }));
+  // With a narrower goal, spare units go to the rest of the programme.
+  const beyondList = goal === 'ALL' ? [] : rankedFor(new Set(Object.keys(DB)))
+    .filter(r => !s.has(r.n.id)).map(r => ({ ...r, beyond:true }));
+
+  for(const list of [goalList, beyondList]){
+    // Repeat until nothing more fits: picking a course can meet another's
+    // corequisite, which lets that one in on the next pass.
+    let changed = true;
+    while(changed){
+      changed = false;
+      for(const { n, i, beyond } of list){
+        if(!isOffered(n.id)) continue;
+        const series = isSeries(n.id);
+        if(series && membersOf(n.id).some(m => picked.has(m))) continue;
+        const id = series ? nextMember(n.id) : n.id;
+        if(!id || picked.has(id)) continue;
+        const u = DB[id].units;
+        if(!coMet(n.id, picked)){
+          // Only worth mentioning if the partner could be taken this term too;
+          // otherwise the course simply isn't available yet.
+          const need = DB[n.id].co.filter(c => !satisfied(c));
+          if(need.every(c => ready(c) && isOffered(c))) passed.set(n.id, { why:'co', with:need });
+          continue;
+        }
+        if(units + u > target){ passed.set(n.id, { why:'units', units:u }); continue; }
+        if(!assignSections([...picked.keys(), id])){
+          const against = [...picked.keys()].filter(p => conflicts(p, id));
+          passed.set(n.id, { why:'clash', with:against.length ? against : [...picked.keys()].filter(p => (SLOTS[p]||[]).length) });
+          continue;
+        }
+        picked.set(id, { reason:'pick', count:i.count, beyond, series: series ? n.id : null });
+        units += u;
+        passed.delete(n.id);
+        changed = true;
+      }
+    }
+  }
+
+  const ids = [...picked.keys()];
+  const assign = assignSections(ids) || {};
+  // Ready toward the goal, but not running this term.
+  // Courses taken outside Yo San never run here, so they aren't news.
+  const notOffered = rankedFor(s).filter(r => !isOffered(r.n.id) && !isExternal(r.n.id)).map(r => r.n.id);
+
+  // What finishing all of this would open up next term.
+  const before = new Set(rankedFor(s).map(r => r.n.id));
+  const added = ids.filter(id => !done.has(id));
+  added.forEach(id => done.add(id));
+  let opens;
+  try {
+    opens = rankedFor(s).map(r => r.n.id).filter(id => !before.has(id) && !ids.includes(id));
+  } finally {
+    added.forEach(id => done.delete(id));
+  }
+  return { target, units, picked, ids, assign, passed, notOffered, opens };
+}
+
+function sectionFor(id, assign){
+  const sec = assign[id];
+  if(sec) return sec;
+  // Untimed (arranged) sections never reach the solver; describe the first one.
+  const raw = (SECTIONS[id] || [])[0];
+  return raw ? { section:raw.section, times:[], instructor:raw.instructor, mode:raw.mode, dates:raw.dates } : null;
+}
+
+function loadLine(units){
+  return units < 8 ? 'below the 8-unit part-time floor' :
+         units < 12 ? 'below the 12-unit full-time floor' :
+         units > 20 ? "over 20 units, which needs the Dean's approval" : 'a full-time load';
+}
+
+let lastSuggestion = null;
+
+function renderReport(r){
+  const goalName = (GOALS.find(g => g.id === goal) || {}).name || goal;
+  const src = TERM.source || {};
+  const cal = TERM.calendar || {};
+  const when = new Date().toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
+  const nm = id => esc(DB[id] ? DB[id].title : id);
+  const codeList = ids => ids.map(c => `${esc(c)}${DB[c] ? ` ${nm(c)}` : ''}`).join(', ');
+
+  const rows = r.ids.map(id => {
+    const n = DB[id], p = r.picked.get(id), sec = sectionFor(id, r.assign);
+    const time = sec && sec.times.length ? sec.times.map(t => `${t.day} ${fmt(t.a)}-${fmt(t.b)}`).join(', ') : 'No set time';
+    const many = (SECTIONS[id] || []).length > 1 ? ` <span class="r-dim">(section ${esc(sec.section)} of ${(SECTIONS[id]||[]).length})</span>` : '';
+    let why;
+    if(p.reason === 'plan') why = 'Already in your plan';
+    else if(p.series) why = `Part ${membersOf(p.series).indexOf(id) + 1} of ${membersOf(p.series).length} of ${esc(p.series)} ${nm(p.series)}`
+      + (p.count ? ` · ${p.count} remaining course${p.count===1?' waits':'s wait'} on the series` : '');
+    else if(n.units === 0) why = 'Benchmark exam you are now eligible for';
+    else if(p.count) why = `${p.count} remaining course${p.count===1?'':'s'} ${p.beyond ? 'in the programme' : 'toward your goal'} depend${p.count===1?'s':''} on it`;
+    else why = 'Nothing else waits on it; it fits your timetable';
+    const co = n.co.filter(c => !satisfied(c) && (r.picked.has(c) || (isSeries(c) && membersOf(c).some(m => r.picked.has(m)))));
+    if(co.length) why += ` · taken alongside ${co.map(esc).join(', ')}`;
+    if(p.beyond) why += ' · <span class="flag">beyond goal</span>';
+    return `<tr>
+      <td class="r-code">${esc(id)}</td>
+      <td>${nm(id)}</td>
+      <td class="r-num">${n.units}</td>
+      <td>${esc(time)}${many}${sec && sec.dates ? `<br><span class="r-dim">${esc(sec.dates)}</span>` : ''}</td>
+      <td>${esc((sec && sec.instructor) || 'TBD')}<br><span class="r-dim">${esc(modeLabel(sec && sec.mode))}</span></td>
+      <td>${why}</td>
+    </tr>`;
+  }).join('');
+
+  const passedRows = [...r.passed.entries()].map(([id, w]) => {
+    const reason = w.why === 'units' ? `Would take you past ${r.target} units (${w.units}u)`
+      : w.why === 'co' ? `Must be taken with ${codeList(w.with)}, which isn't in this set`
+      : `Every section overlaps ${codeList(w.with)}`;
+    return `<li><b>${esc(id)}</b> ${nm(id)} — ${reason}</li>`;
+  }).join('');
+
+  const regs = Array.isArray(cal.registration) ? cal.registration : [];
+  const notes = (TERM.notes || []).map(o => typeof o === 'string' ? o : o.text);
+  const timed = r.ids.filter(id => (SLOTS[id] || []).length);
+
+  document.getElementById('report-body').innerHTML = `
+    <h1>${esc(TERM.label)} — suggested courses</h1>
+    <p class="r-meta">Goal: <b>${esc(goalName)}</b> · Unit target: <b>${r.target}</b> · ${done.size} course${done.size===1?'':'s'} marked complete · Generated ${esc(when)}</p>
+    <p class="r-meta">From ${esc(src.document || 'the term schedule')}${src.version ? `, version ${esc(src.version)}` : ''}${cal.range ? ` · Term ${esc(cal.range)}` : ''}</p>
+
+    <h2>Suggested <span class="r-dim">· ${r.units} units, ${esc(loadLine(r.units))}</span></h2>
+    ${r.ids.length ? `<table class="r-table">
+      <thead><tr><th>Course</th><th>Title</th><th>Units</th><th>When</th><th>Instructor</th><th>Why</th></tr></thead>
+      <tbody>${rows}</tbody></table>`
+      : `<p>Nothing to suggest. Either nothing you're ready for runs this term, or the unit target is already met by your plan. Mark more courses complete, or raise the target.</p>`}
+    ${r.ids.length && !timed.length ? '' : r.ids.length ? '<p class="r-dim">No two suggested sections meet at the same time. Part-term courses are still treated as running all term, so this errs on the safe side.</p>' : ''}
+    ${r.units < r.target && r.ids.length ? `<p class="r-dim">${r.target - r.units} unit${r.target - r.units === 1 ? '' : 's'} short of the target: nothing else you're ready for fits alongside these.</p>` : ''}
+
+    ${passedRows ? `<h2>Also ready, but left out <span class="r-dim">· alternatives if you swap something</span></h2><ul class="r-list">${passedRows}</ul>` : ''}
+    ${r.notOffered.length ? `<h2>Ready, but not offered ${esc(TERM.label)}</h2><p>${codeList(r.notOffered)}</p>` : ''}
+    ${r.opens.length ? `<h2>Finishing these opens next</h2><p>${codeList(r.opens)}</p>` : ''}
+
+    ${regs.length ? `<h2>Registration</h2><ul class="r-list">${regs.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+    ${notes.length ? `<h2>About this term's data</h2><ul class="r-list r-dim">${notes.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+
+    <p class="r-foot">A planning aid, not advice from the university. It goes by the courses you've marked complete and by the schedule as transcribed. Prerequisites can only be waived by an approved Override Petition. Check with an academic counselor before you register.</p>`;
+  document.getElementById('report-apply').disabled = !r.ids.some(id => !plan.has(id));
+}
+
+function openReport(){
+  const target = +document.getElementById('sug-units').value || 16;
+  lastSuggestion = suggestTerm(target);
+  renderReport(lastSuggestion);
+  const box = document.getElementById('report');
+  box.hidden = false;
+  document.body.classList.add('reporting');
+  box.querySelector('.r-close').focus();
+}
+function closeReport(){
+  document.getElementById('report').hidden = true;
+  document.body.classList.remove('reporting');
+}
+// Put the suggested courses in the plan, on the sections the report names.
+function applySuggestion(){
+  const r = lastSuggestion;
+  if(!r) return;
+  r.ids.forEach(id => {
+    if(plan.has(id)) return;
+    const sec = r.assign[id];
+    plan.set(id, sec && (SLOTS[id] || []).length > 1 ? sec.section : null);
+  });
+  save(); renderAll();
+  closeReport();
 }
 
 /* Two courses at the same hour are only really in each other's way if they run
@@ -1832,6 +2084,18 @@ document.getElementById('search').addEventListener('input', e => {
   el.onchange = () => { extra[f] = el.checked; save(); paint(); renderAll(); };
 });
 document.querySelectorAll('[data-laptop]').forEach(el => el.innerHTML = LAPTOP);
+{
+  const sel = document.getElementById('sug-units');
+  sel.innerHTML = UNIT_TARGETS.map(u => `<option value="${u}"${u === 16 ? ' selected' : ''}>${u} units${u === 12 ? ' (full-time)' : u === 20 ? ' (max)' : ''}</option>`).join('');
+}
+document.getElementById('suggest').onclick = openReport;
+document.getElementById('report-close').onclick = closeReport;
+document.getElementById('report-print').onclick = () => window.print();
+document.getElementById('report-apply').onclick = applySuggestion;
+document.getElementById('report').addEventListener('click', e => { if(e.target.id === 'report') closeReport(); });
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape' && !document.getElementById('report').hidden) closeReport();
+});
 document.getElementById('export').onclick = exportFile;
 document.getElementById('import').onclick = () => document.getElementById('file').click();
 document.getElementById('file').onchange = e => {
