@@ -124,6 +124,22 @@ Blocks in the grid are clickable — click one for that course's detail in the r
 
 An amber ▲ next to a planned course means its prerequisites aren't marked complete. Not a block — concurrent enrolment is often legitimate here — just worth a second look.
 
+### Save your plan as a PDF
+
+**Save plan as PDF**, under **My plan**, opens a clean, printable copy of your plan:
+
+- **Header:** the term, total units and load (full-time, part-time), the date, and the schedule it's based on.
+- **Course table:** each course with its section, time, part-term dates, instructor and mode (online or in person), plus the total.
+  - A course you haven't picked a section for shows the one the week grid is using, marked *not yet chosen*.
+  - A course whose prerequisites aren't marked complete is flagged *check prereqs*.
+- **Week grid:** at full size, each block labelled with its time. Courses with arranged times (internships, herb labs) are listed beneath it.
+- **Worth checking:** any time clashes, worded as in the plan panel, and any courses still short of prerequisites.
+- **Registration:** the term's registration dates.
+
+Click **Print or save as PDF** and choose **Save as PDF** as the printer to keep it as a file. Only the plan prints, in colour, and the file is named after it, for example *Spring 2027 plan.pdf*. Nothing is uploaded, and nothing needs installing.
+
+This is a copy, not a backup. It can't be restored. To move your progress between browsers, use **Back up to file** (see [Saving your progress](#saving-your-progress)).
+
 ### Suggest a term
 
 Under **My plan**, pick a unit target (12 to 20; 16 by default) and click **Suggest a term**. You get a report of courses to take this term, based on what you've marked complete and the goal you've chosen.

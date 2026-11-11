@@ -215,6 +215,7 @@
   }
   .r-bar{display:flex;gap:8px;justify-content:flex-end;margin-bottom:6px}
   .r-bar .btn{width:auto;padding:7px 14px;margin:0}
+  .r-bar [hidden]{display:none}
   .r-bar .btn[disabled]{opacity:.45;cursor:default;filter:none}
   #report-body h1{font-size:20px;margin:0 0 4px}
   #report-body h2{font-size:14px;margin:20px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--rule)}
@@ -228,6 +229,16 @@
   .r-list{margin:0;padding-left:18px;font-size:12.5px}
   .r-list li{margin-bottom:3px}
   #report-body p{font-size:12.5px;margin:6px 0}
+  .r-table tfoot td{border-bottom:none;border-top:1px solid var(--rule-2)}
+  /* The week grid at reading size, labelled with times, for the printed plan. */
+  .r-week{margin-top:4px}
+  .r-week .wk-body{height:420px}
+  .r-week .wk-head span{font-size:11px}
+  .r-week .wk-hours{width:30px}
+  .r-week .wk-head span:first-child{width:30px}
+  .r-week .wk-hours i{font-size:10px}
+  .r-week .blk{font-size:10px;cursor:default;line-height:1.2}
+  .r-week .blk:hover{box-shadow:none}
   .r-foot{margin-top:20px !important;color:var(--ink-3);font-size:11.5px !important}
   @media print{
     body.reporting{height:auto;overflow:visible;background:#fff}
@@ -235,7 +246,9 @@
     body.reporting .report{position:static;background:none;padding:0;display:block;overflow:visible}
     body.reporting .sheet{box-shadow:none;border-radius:0;max-width:none;padding:0}
     body.reporting .r-bar{display:none}
-    .r-table tr{break-inside:avoid}
+    .r-table tr, .r-week{break-inside:avoid}
+    /* Keep the track colours on paper; browsers drop backgrounds by default. */
+    body.reporting .sheet *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   }
   .tick{color:var(--accent);font-weight:600}
   .cross{color:var(--ink-3)}
@@ -284,6 +297,7 @@
       <div id="plan-status"></div>
       <div class="wk" id="week"></div>
       <p class="note" style="margin:8px 0 0">Add courses with <b>+</b> from the list above or from any course's detail panel. Times come from this term's schedule; where a course has two sections, the grid shows a combination that works.</p>
+      <button class="mini" id="plan-pdf" style="width:100%;margin-top:10px" title="Open a printable copy of your plan; choose Save as PDF in the print dialog to keep it as a file">Save plan as PDF</button>
       <div class="sug">
         <select id="sug-units" title="How many units to aim for this term"></select>
         <button class="mini" id="suggest" title="Propose courses for this term from what you've completed and your goal">Suggest a term</button>
@@ -1454,18 +1468,109 @@ function renderReport(r){
   document.getElementById('report-apply').disabled = !r.ids.some(id => !plan.has(id));
 }
 
+/* The plan as a page to keep: what you're taking, when, with whom, and how,
+   the week grid, and anything worth a second look. Printing it — or choosing
+   "Save as PDF" in the print dialog — is how it leaves the browser; nothing is
+   uploaded and nothing needs installing. */
+function renderPlanSheet(){
+  const ids = [...plan.keys()].filter(id => DB[id]).sort((a,b) => a.localeCompare(b));
+  const src = TERM.source || {};
+  const cal = TERM.calendar || {};
+  const when = new Date().toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
+  const assign = assignSections(ids);
+  const units = ids.reduce((a,id) => a + DB[id].units, 0);
+  const pairs = clashPairs(ids);
+  const notReady = ids.filter(id => !done.has(id) && !ready(id));
+
+  const rows = ids.map(id => {
+    const n = DB[id];
+    const all = SECTIONS[id] || [];
+    const pick = plan.get(id);
+    // The section the student chose; else the one the grid uses; else, for a
+    // course that meets at an arranged time, its only listing.
+    const raw = (pick != null && all.find(s => s.section === pick))
+      // Same fallback as the week grid, so the table and the grid agree.
+      || (() => { const g = (assign && assign[id]) || optionsFor(id)[0]; return g ? all.find(s => s.section === g.section) : null; })()
+      || (all.length === 1 ? all[0] : null);
+    const time = raw ? sectionTime(raw) : `${all.length} sections — none chosen`;
+    const secNote = all.length > 1 && raw
+      ? ` <span class="r-dim">(section ${esc(raw.section)}${pick == null ? ', not yet chosen' : ''})</span>` : '';
+    const mode = raw ? modeLabel(raw.mode) : [...new Set(all.map(s => modeLabel(s.mode)))].join(' / ');
+    return `<tr>
+      <td class="r-code">${esc(id)}</td>
+      <td>${esc(n.title)}${notReady.includes(id) ? ' <span class="flag" title="Prerequisites not yet marked complete">check prereqs</span>' : ''}</td>
+      <td class="r-num">${n.units}</td>
+      <td>${esc(time)}${secNote}${raw && raw.dates ? `<br><span class="r-dim">${esc(raw.dates)}</span>` : ''}</td>
+      <td>${esc((raw && raw.instructor) || (raw ? 'TBD' : [...new Set(all.map(s => s.instructor).filter(Boolean))].join(' / ') || 'TBD'))}</td>
+      <td>${esc(mode)}</td>
+    </tr>`;
+  }).join('');
+
+  const grid = weekGrid(ids, assign, true);
+  const untimed = ids.filter(id => !(SLOTS[id] || []).length);
+  const regs = Array.isArray(cal.registration) ? cal.registration : [];
+  const checks = [
+    ...pairs.map(([a,b]) => overlapLine(a, b)),
+    ...(!pairs.length && !assign ? ['No single set of sections avoids every overlap; the grid shows one arrangement.'] : []),
+    ...(notReady.length ? [`Prerequisites not yet marked complete for ${notReady.map(esc).join(', ')}. That can be fine — some are taken concurrently — but check before you register.`] : [])
+  ];
+
+  document.getElementById('report').setAttribute('aria-label', 'My plan');
+  document.getElementById('report-body').innerHTML = `
+    <h1>${esc(TERM.label)} — my plan</h1>
+    <p class="r-meta">${ids.length} course${ids.length===1?'':'s'} · <b>${units} units</b>, ${esc(loadLine(units))} · Saved ${esc(when)}</p>
+    <p class="r-meta">From ${esc(src.document || 'the term schedule')}${src.version ? `, version ${esc(src.version)}` : ''}${cal.range ? ` · Term ${esc(cal.range)}` : ''}${cal.addDrop ? ` · ${esc(cal.addDrop)}` : ''}</p>
+
+    ${ids.length ? `<h2>Courses</h2>
+    <table class="r-table">
+      <thead><tr><th>Course</th><th>Title</th><th>Units</th><th>When</th><th>Instructor</th><th>Mode</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr><td></td><td><b>Total</b></td><td class="r-num"><b>${units}</b></td><td colspan="3"></td></tr></tfoot>
+    </table>` : '<p>Your plan is empty. Add courses with <b>+</b>, then save it here.</p>'}
+
+    ${grid ? `<h2>Week</h2><div class="wk on r-week">${grid}</div>` : ''}
+    ${untimed.length ? `<p class="r-dim">Not on the grid, because they meet at an arranged time: ${untimed.map(esc).join(', ')}.</p>` : ''}
+
+    <h2>Worth checking</h2>
+    ${checks.length ? `<ul class="r-list">${checks.map(c => `<li>${c}</li>`).join('')}</ul>` : '<p>Nothing overlaps, and every prerequisite is marked complete.</p>'}
+
+    ${regs.length ? `<h2>Registration</h2><ul class="r-list">${regs.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+
+    <p class="r-foot">Made with the Yo San prerequisite explorer from the courses marked complete in this browser. A planning aid, not a registration: enrol through the university, and check with an academic counselor first.</p>`;
+}
+
+function showSheet(kind){
+  const box = document.getElementById('report');
+  document.getElementById('report-apply').hidden = kind !== 'suggest';
+  box.hidden = false;
+  box.dataset.kind = kind;
+  document.body.classList.add('reporting');
+  box.querySelector('.r-close').focus();
+}
 function openReport(){
   const target = +document.getElementById('sug-units').value || 16;
   lastSuggestion = suggestTerm(target);
+  document.getElementById('report').setAttribute('aria-label', 'Suggested courses');
   renderReport(lastSuggestion);
-  const box = document.getElementById('report');
-  box.hidden = false;
-  document.body.classList.add('reporting');
-  box.querySelector('.r-close').focus();
+  showSheet('suggest');
+}
+function openPlanSheet(){
+  renderPlanSheet();
+  showSheet('plan');
 }
 function closeReport(){
   document.getElementById('report').hidden = true;
   document.body.classList.remove('reporting');
+}
+// The PDF takes its file name from the page title, so name it for what it is
+// while the print dialog is open.
+function printSheet(){
+  const kind = document.getElementById('report').dataset.kind;
+  const was = document.title;
+  document.title = `${TERM.label} ${kind === 'plan' ? 'plan' : 'suggested courses'}`;
+  const restore = () => { document.title = was; window.removeEventListener('afterprint', restore); };
+  window.addEventListener('afterprint', restore);
+  window.print();
 }
 // Put the suggested courses in the plan, on the sections the report names.
 function applySuggestion(){
@@ -1562,9 +1667,19 @@ const [DAY_START, DAY_END] = (() => {
 
 function renderWeek(ids, assign){
   const wk = document.getElementById('week');
-  const timed = ids.filter(id => optionsFor(id).length);
-  if(!timed.length){ wk.className = 'wk'; wk.innerHTML = ''; return; }
+  const html = weekGrid(ids, assign);
+  if(!html){ wk.className = 'wk'; wk.innerHTML = ''; return; }
   wk.className = 'wk on';
+  wk.innerHTML = html;
+  wk.querySelectorAll('[data-go]').forEach(el =>
+    el.onclick = () => focus(el.getAttribute('data-go')));
+}
+
+// The week grid as markup, shared by the plan panel and the printable plan.
+// `long` labels each block with its time as well as its code, for paper.
+function weekGrid(ids, assign, long){
+  const timed = ids.filter(id => optionsFor(id).length);
+  if(!timed.length) return '';
   const span = DAY_END - DAY_START;
   const hours = [];
   for(let h = DAY_START/60; h <= DAY_END/60 - 1; h += 2)
@@ -1582,14 +1697,11 @@ function renderWeek(ids, assign){
       const bad = here.some(q => q !== b && timesClash(b.t, q.t));
       const who = b.sec.instructor ? ` · ${esc(b.sec.instructor)}` : '';
       const which = (SLOTS[b.id]||[]).length > 1 ? ` · section ${esc(b.sec.section)}` : '';
-      return `<div class="blk ${bad?'clash':''}" data-go="${b.id}" style="top:${100*(b.t.a-DAY_START)/span}%;height:${100*(b.t.b-b.t.a)/span}%;background:${t.bg};border-color:${t.line};color:${t.ink}" title="${b.id} · ${esc(DB[b.id].title)}${which}${who} — click for detail">${b.id}</div>`;
+      return `<div class="blk ${bad?'clash':''}" data-go="${b.id}" style="top:${100*(b.t.a-DAY_START)/span}%;height:${100*(b.t.b-b.t.a)/span}%;background:${t.bg};border-color:${t.line};color:${t.ink}" title="${b.id} · ${esc(DB[b.id].title)}${which}${who} — click for detail">${b.id}${long ? `<br>${fmt(b.t.a)}-${fmt(b.t.b)}` : ''}</div>`;
     }).join('') + `</div>`;
   }).join('');
-  wk.innerHTML =
-    `<div class="wk-head"><span></span>${DAYS.map(d => `<span>${d}</span>`).join('')}</div>
+  return `<div class="wk-head"><span></span>${DAYS.map(d => `<span>${d}</span>`).join('')}</div>
      <div class="wk-body"><div class="wk-hours">${hours.join('')}</div><div class="wk-cols">${cols}</div></div>`;
-  wk.querySelectorAll('[data-go]').forEach(el =>
-    el.onclick = () => focus(el.getAttribute('data-go')));
 }
 
 function renderPlan(){
@@ -1881,7 +1993,8 @@ document.getElementById('search').addEventListener('input', e => {
 }
 document.getElementById('suggest').onclick = openReport;
 document.getElementById('report-close').onclick = closeReport;
-document.getElementById('report-print').onclick = () => window.print();
+document.getElementById('report-print').onclick = printSheet;
+document.getElementById('plan-pdf').onclick = openPlanSheet;
 document.getElementById('report-apply').onclick = applySuggestion;
 document.getElementById('report').addEventListener('click', e => { if(e.target.id === 'report') closeReport(); });
 document.addEventListener('keydown', e => {
