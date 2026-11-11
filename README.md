@@ -1,4 +1,4 @@
-# Yo San prerequisite explorer
+# Yo San course planner
 
 An interactive map of the Fall 2026 MAcCHM / DAcCHM course prerequisites, built to answer three questions a printed schedule can't:
 
