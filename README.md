@@ -126,9 +126,11 @@ Blocks in the grid are clickable — click one for that course's detail in the r
 
 An amber ▲ next to a planned course means its prerequisites aren't marked complete. Not a block — concurrent enrolment is often legitimate here — just worth a second look.
 
-### Save your plan as a PDF
+### Save your plan, and get suggestions
 
-**Save plan as PDF**, under **My plan**, opens a clean, printable copy of your plan:
+**Save plan & see suggestions**, under **My plan**, opens one card with two halves.
+
+**Your plan, on top.** This is the half that prints:
 
 - **Header:** the term, total units and load (full-time, part-time), the date, and the schedule it's based on.
 - **Course table:** each course with its section, time, part-term dates, instructor and mode (online or in person), plus the total.
@@ -138,32 +140,33 @@ An amber ▲ next to a planned course means its prerequisites aren't marked comp
 - **Worth checking:** any time clashes, worded as in the plan panel, and any courses still short of prerequisites.
 - **Registration:** the term's registration dates.
 
-Click **Print or save as PDF** and choose **Save as PDF** as the printer to keep it as a file. Only the plan prints, in colour, and the file is named after it, for example *Spring 2027 plan.pdf*. Nothing is uploaded, and nothing needs installing.
+Click **Print or save as PDF** and choose **Save as PDF** as the printer to keep it as a file. Only your plan prints, in colour; the suggestions stay on screen. The file is named after it, for example *Spring 2027 plan.pdf*. Nothing is uploaded, and nothing needs installing.
 
 This is a copy, not a backup. It can't be restored. To move your progress between browsers, use **Back up to file** (see [Saving your progress](#saving-your-progress)).
 
-### Suggest a term
+**Suggestions, underneath.** These are courses to fill the rest of the term, up to a unit target you pick there (12 to 20; 16 by default). They're based on what you've marked complete and the goal you've chosen.
 
-Under **My plan**, pick a unit target (12 to 20; 16 by default) and click **Suggest a term**. You get a report of courses to take this term, based on what you've marked complete and the goal you've chosen.
+- Each row shows the course's section, time, instructor, online mark and why it's suggested.
+- **+** puts that course into your plan, on the section shown. The row turns green and reads *✓ Added*, and your plan above updates straight away.
+- **↺** (revert) takes it back out.
+
+The list is worked out when the card opens, or when you change the target or click **refresh**. It then holds still, so adding one course doesn't reshuffle the rest. Every course in it fits alongside your plan and the others in the list.
 
 How it picks:
 
-- **It starts from your plan.** Anything already in **My plan** stays, including the sections you've chosen, and the rest is built around it.
+- **It starts from your plan.** Anything already in **My plan** stays, including the sections you've chosen, and suggestions are built around it.
 - **It reads the ready list in its own order.** Courses that unlock the most of what's left toward your goal come first. A course has to run this term, and at least one of its sections has to fit alongside everything already picked.
 - **Corequisites are kept together.** HM111 comes only with HM110 (or after it), CL611 only alongside a CL600 part.
 - **It takes one part of a series per term.** For example, the next CL600 internship part you haven't done.
 - **It stops at the unit target.** With a narrower goal than **Whole program**, spare units go to the most useful courses beyond the goal, marked *beyond goal*.
 
-The report lists each suggested course with its section, time, instructor, mode and the reason it was chosen. It also shows:
+Below the list it also shows:
 
-- what else you're ready for and why it was left out (over the unit target, every section clashes, or its corequisite isn't in the set)
+- what else you're ready for, and why it was left out (over the unit target, every section clashes, or its corequisite isn't in the set)
 - what you're ready for that doesn't run this term
 - what finishing the suggested set would open up next
-- the term's registration dates and its data notes
 
-**Print or save as PDF** prints the report alone. **Add these to my plan** puts the suggested courses into **My plan** on the sections the report names, so the week grid shows the same timetable.
-
-It errs on the safe side: courses that run for part of the term are still treated as clashing with anything at the same hour. It never changes your progress, and it only changes your plan if you ask.
+It errs on the safe side: courses that run for part of the term are still treated as clashing with anything at the same hour. It never changes your progress, and it only changes your plan when you click **+** or **↺**.
 
 ### Trace a chain
 
