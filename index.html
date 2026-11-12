@@ -35,7 +35,30 @@
   h1{font-size:16px;font-weight:600;margin:0;letter-spacing:-0.01em}
   header .meta{font-size:12.5px;color:var(--ink-3)}
   main{flex:1;display:flex;min-height:0}
-  #cy{flex:1;background:var(--panel);min-width:0}
+  #center{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--panel)}
+  #cy{flex:1;background:var(--panel);min-width:0;min-height:0}
+  /* The middle shows either the graph or the plan's week, never both. */
+  .viewbar{flex:none;display:flex;gap:4px;padding:8px 12px;border-bottom:1px solid var(--rule);background:var(--bg)}
+  .viewbar button{
+    padding:5px 12px;border-radius:15px;border:1px solid var(--rule-2);background:var(--panel);
+    color:var(--ink-2);font:inherit;font-size:12.5px;cursor:pointer;
+  }
+  .viewbar button:hover{border-color:var(--accent);color:var(--accent)}
+  .viewbar button[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+  #bigweek{display:none;flex:1;min-height:0;overflow:auto;padding:14px 18px 18px}
+  body.view-week #cy{display:none}
+  body.view-week #bigweek{display:block}
+  .bw-head{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
+  .bw-head h2{font-size:15px;margin:0;text-transform:none;letter-spacing:0;color:var(--ink)}
+  #bigweek .wk{display:block;margin-top:10px}
+  #bigweek .wk-body{height:max(480px, calc(100vh - 250px))}
+  #bigweek .wk-head span{font-size:12px;padding:5px 0}
+  #bigweek .wk-hours, #bigweek .wk-head span:first-child{width:34px}
+  #bigweek .wk-hours i{font-size:10.5px}
+  #bigweek .blk{font-size:11.5px;line-height:1.25;padding:3px 5px;font-weight:600}
+  #bigweek .blk small{display:block;font-weight:400;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #bigweek .banner{margin-top:0}
+  .graph-toggle{display:none}
   aside{
     width:var(--right-w);flex:none;background:var(--panel);
     overflow-y:auto;padding:16px 18px 40px;
@@ -303,7 +326,20 @@
       width:auto;flex:none;max-height:none;
       border:none;border-top:1px solid var(--rule);
     }
-    #cy{flex:none;height:60vh}
+    /* On a phone the graph grabs every swipe to pan and zoom, so anyone who
+       scrolls onto it gets stuck there. It starts hidden; the course list and
+       detail panel cover the same ground, and the toggle brings it back. */
+    #center{flex:none;display:block}
+    .viewbar, #bigweek, body.view-week #bigweek{display:none}
+    #cy, body.view-week #cy{display:none;flex:none;height:55vh}
+    body.graph-on #cy, body.graph-on.view-week #cy{display:block}
+    /* The header hint is about the graph, and the header stays on screen. */
+    header .hint{display:none}
+    .graph-toggle{
+      display:block;flex:none;margin:10px 14px;padding:9px;border-radius:7px;
+      border:1px solid var(--rule-2);background:var(--panel);color:var(--accent);
+      font:inherit;font-size:13px;font-weight:500;cursor:pointer;
+    }
     .grip{display:none}
   }
 </style>
@@ -314,7 +350,7 @@
   <h1>Yo San course planner</h1>
   <span class="meta" id="term-label"></span>
   <span class="meta" id="term-dates"></span>
-  <span class="meta" style="margin-left:auto">Click any course to trace its chain. Progress saves in this browser only.</span>
+  <span class="meta hint" style="margin-left:auto">Click any course to trace its chain. Progress saves in this browser only.</span>
 </header>
 
 <main>
@@ -362,7 +398,15 @@
   </aside>
 
   <div class="grip" data-grip="left" role="separator" aria-orientation="vertical" title="Drag to resize. Double-click to reset."></div>
-  <div id="cy"></div>
+  <div id="center">
+    <div class="viewbar" role="tablist" aria-label="What the middle shows">
+      <button role="tab" data-view="graph" aria-selected="true" title="Every course and what it needs">Prerequisite graph</button>
+      <button role="tab" data-view="week" aria-selected="false" title="The courses in your plan, on a full-size week">My week</button>
+    </div>
+    <button class="graph-toggle" id="graph-toggle" aria-controls="cy" aria-expanded="false">Show prerequisite graph</button>
+    <div id="cy"></div>
+    <div id="bigweek" role="tabpanel" aria-label="My week"></div>
+  </div>
   <div class="grip" data-grip="right" role="separator" aria-orientation="vertical" title="Drag to resize. Double-click to reset."></div>
 
   <aside>
@@ -1299,12 +1343,17 @@ function paint(){
 
 const READ_ZOOM = 1.05;
 
+// False while the graph is hidden on a phone: it then has no size to frame into.
+const graphShown = () => cy.width() > 0 && cy.height() > 0;
+
 function fitAll(){
+  if(!graphShown()) return;
   const vis = cy.nodes().filter(n => !n.hasClass('hide'));
   if(vis.length) cy.animate({ fit:{ eles:vis, padding:34 } }, { duration:300, easing:'ease-out' });
 }
 
 function frameLineage(target, eles, pad){
+  if(!graphShown()) return;
   const vis = eles.filter(e => !e.hasClass('hide'));
   if(!vis.length) return;
   const bb = vis.boundingBox();
@@ -1953,12 +2002,36 @@ const [DAY_START, DAY_END] = (() => {
 })();
 
 function renderWeek(ids, assign){
+  renderBigWeek(ids, assign);
   const wk = document.getElementById('week');
   const html = weekGrid(ids, assign);
   if(!html){ wk.className = 'wk'; wk.innerHTML = ''; return; }
   wk.className = 'wk on';
   wk.innerHTML = html;
   wk.querySelectorAll('[data-go]').forEach(el =>
+    el.onclick = () => focus(el.getAttribute('data-go')));
+}
+
+/* My week: the plan on a full-size week in the middle pane, for when the graph
+   is more than you need. Blocks carry the time, title and instructor, and open
+   the course's detail when clicked, as in the small grid. */
+function renderBigWeek(ids, assign){
+  const box = document.getElementById('bigweek');
+  if(!box) return;
+  const units = ids.reduce((a,id) => a + DB[id].units, 0);
+  const grid = weekGrid(ids, assign, 'big');
+  const untimed = ids.filter(id => !(SLOTS[id] || []).length);
+  const status = document.getElementById('plan-status');
+  box.innerHTML = `
+    <div class="bw-head"><h2>My week</h2><span class="tally">${ids.length
+      ? `${ids.length} course${ids.length === 1 ? '' : 's'} · ${units} units` : ''}</span></div>
+    ${ids.length ? (status ? status.innerHTML : '') : ''}
+    ${grid ? `<div class="wk on">${grid}</div>`
+      : `<div class="empty" style="margin-top:12px">${ids.length
+          ? 'Nothing in your plan meets at a set time yet.'
+          : 'Your plan is empty. Add courses with <b>+</b> from the ready list, a course\'s detail or the instructor search, and they appear here.'}</div>`}
+    ${untimed.length ? `<p class="note" style="margin:8px 0 0">Arranged times, so not on the grid: ${untimed.map(esc).join(', ')}.</p>` : ''}`;
+  box.querySelectorAll('[data-go]').forEach(el =>
     el.onclick = () => focus(el.getAttribute('data-go')));
 }
 
@@ -1984,7 +2057,7 @@ function weekGrid(ids, assign, long){
       const bad = here.some(q => q !== b && timesClash(b.t, q.t));
       const who = b.sec.instructor ? ` · ${esc(b.sec.instructor)}` : '';
       const which = (SLOTS[b.id]||[]).length > 1 ? ` · section ${esc(b.sec.section)}` : '';
-      return `<div class="blk ${bad?'clash':''}" data-go="${b.id}" style="top:${100*(b.t.a-DAY_START)/span}%;height:${100*(b.t.b-b.t.a)/span}%;background:${t.bg};border-color:${t.line};color:${t.ink}" title="${b.id} · ${esc(DB[b.id].title)}${which}${who} — click for detail">${b.id}${onlineMark(b.id, b.sec)}${long ? `<br>${fmt(b.t.a)}-${fmt(b.t.b)}` : ''}</div>`;
+      return `<div class="blk ${bad?'clash':''}" data-go="${b.id}" style="top:${100*(b.t.a-DAY_START)/span}%;height:${100*(b.t.b-b.t.a)/span}%;background:${t.bg};border-color:${t.line};color:${t.ink}" title="${b.id} · ${esc(DB[b.id].title)}${which}${who} — click for detail">${b.id}${onlineMark(b.id, b.sec)}${long ? `<br>${fmt(b.t.a)}-${fmt(b.t.b)}` : ''}${long === 'big' ? `<small>${esc(DB[b.id].title)}</small>${b.sec.instructor ? `<small>${esc(b.sec.instructor)}</small>` : ''}` : ''}</div>`;
     }).join('') + `</div>`;
   }).join('');
   return `<div class="wk-head"><span></span>${DAYS.map(d => `<span>${d}</span>`).join('')}</div>
@@ -2252,7 +2325,13 @@ function setupGrips(){
     });
   });
 
-  addEventListener('resize', () => { applyLayout(); cy.resize(); markOverflow(); });
+  let wasShown = graphShown();
+  addEventListener('resize', () => {
+    applyLayout(); cy.resize(); markOverflow();
+    const now = graphShown();
+    if(now && !wasShown) focus(selected);
+    wasShown = now;
+  });
 }
 
 function renderAll(){ renderGoals(); renderCompleted(); renderReady(); renderPlan(); renderDetail(); markOverflow(); }
@@ -2305,6 +2384,40 @@ document.getElementById('search').addEventListener('input', e => {
 document.querySelectorAll('[data-laptop]').forEach(el => el.innerHTML = LAPTOP);
 renderDayChips();
 document.getElementById('plan-card').onclick = openPlanCard;
+/* Which view the middle shows is a screen preference, like panel widths: kept
+   per browser, never in a backup. */
+const VIEW_KEY = 'ysu-view';
+function setView(v, quiet){
+  if(v !== 'week') v = 'graph';
+  document.body.classList.toggle('view-week', v === 'week');
+  document.querySelectorAll('.viewbar [data-view]').forEach(b =>
+    b.setAttribute('aria-selected', String(b.getAttribute('data-view') === v)));
+  try{ localStorage.setItem(VIEW_KEY, v); }catch(e){}
+  if(v === 'graph' && !quiet){
+    // It had no size while the week was showing: measure, then frame.
+    cy.resize();
+    focus(selected);
+  }
+}
+document.querySelectorAll('.viewbar [data-view]').forEach(b =>
+  b.onclick = () => setView(b.getAttribute('data-view')));
+{
+  let saved = null;
+  try{ saved = localStorage.getItem(VIEW_KEY); }catch(e){}
+  setView(saved, true);
+}
+document.getElementById('graph-toggle').onclick = () => {
+  const on = document.body.classList.toggle('graph-on');
+  const btn = document.getElementById('graph-toggle');
+  btn.textContent = on ? 'Hide prerequisite graph' : 'Show prerequisite graph';
+  btn.setAttribute('aria-expanded', String(on));
+  if(on){
+    // It had no size while hidden: measure it, then frame what's selected.
+    cy.resize();
+    focus(selected);
+    btn.scrollIntoView({ behavior:'auto', block:'start' });
+  }
+};
 document.getElementById('report-close').onclick = closeReport;
 document.getElementById('report-print').onclick = printSheet;
 document.getElementById('report').addEventListener('click', e => { if(e.target.id === 'report') closeReport(); });
