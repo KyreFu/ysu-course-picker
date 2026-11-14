@@ -51,7 +51,7 @@ Four options in the top left. Each filters the graph down to just what that goal
 
 | Goal | Requires | Units |
 |---|---|---|
-| Whole program | 86 entries — 79 courses and 7 series | 194 |
+| Whole program | 94 entries — 87 courses and 7 series | 208 |
 | First Comprehensive (EX100) | 14 | 38 |
 | Pre-clinical exams (EX210 / EX220) | 23 | 62 |
 | Graduation Exam (EX300) | 38 | 114 |
@@ -329,7 +329,7 @@ The point is that a student who notices something odd can tell whether it's a bu
 
 ## Where the data comes from
 
-**Current term: Spring 2027, working draft.** Meeting times, instructors and delivery modes are transcribed from a photo of the printed draft, which carries no version number or date. Re-check `data/classes-2027-spring.json` against the published schedule on [yosan.edu](https://yosan.edu/course-schedule-yo-san-university/) when it appears. Prerequisites still follow the Fall 2026 key; the draft's reverse page has not been checked against it.
+**Current term: Spring 2027.** Course Schedule version 1, dated 13 November 2026, published at [yosan.edu](https://yosan.edu/course-schedule-yo-san-university/). Course numbers, titles, units, meeting times, instructors and delivery modes come from page 1 and the doctoral and exam tables on page 2. Arizona's local classes (Tempe in-person and Arizona-only Zoom sections, timed in MST) are left out, as they were for Fall 2026. Prerequisites still follow the curriculum as built from the Fall 2026 key. The Spring 2027 key differs for CM201, CM202, WM212, WM310, AC302, AC310 and the Pre-Clinical Exam (EX210), and the curriculum hasn't been changed to match yet.
 
 **Fall 2026** (`data/classes-2026-fall.json`): Course Schedule version 5, dated 26 August 2026, published at [yosan.edu](https://yosan.edu/course-schedule-yo-san-university/). Course numbers, titles, units, meeting times and instructor come from page 1; the lettered prerequisite key from page 2.
 
