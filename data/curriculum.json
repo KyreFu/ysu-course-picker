@@ -16,7 +16,7 @@
   "requirements": {
     "hours": { "label": "150 hours clinical theater & observation", "kind": "manual" },
     "certs": { "label": "CPR, first aid and CNT certification", "kind": "manual" },
-    "qi": { "label": "4 units of qi cultivation", "kind": "units", "units": 4, "countsToward": ["QC110", "QC120", "QC140", "QC252", "EL346", "EL357"] }
+    "qi": { "label": "4 units of qi cultivation", "kind": "units", "units": 4, "countsToward": ["QC110", "QC120", "QC140", "QC241", "QC252", "QC355", "EL346", "EL357"] }
   },
 
   "_notesNote": "Shown to students in the 'About this data' panel. Say what the model does and where the sources disagree, so nobody has to guess whether something is a bug.",
@@ -31,6 +31,8 @@
     { "text": "Benchmark exams are recorded as carrying no units, on the reading that the 1 and 2 printed beside each one are its two sittings rather than credit. Not yet confirmed. If they do carry credit, every unit total that includes an exam is low.", "status": "unconfirmed" },
 
     { "text": "QC150 Dao-In level 1 and QC252 Dao-In level 3 are different courses, not duplicates, and the level prerequisite may be waived so a student can start at level 3. The numbering is still odd: a level-3 course numbered 252 sits oddly beside a level-1 course numbered 150, and the QC150 series may have been renumbered without new classes being created.", "status": "unconfirmed" },
+
+    { "text": "QC241 Infinichi 2A and QC355 New Provision Chen Style Tai Chi first appear on the Spring 2027 schedule, under the qi cultivation foundation courses, so they are counted toward the 4-unit qi requirement. QC241 requires QC140, per the schedule's key.", "status": "unconfirmed" },
 
     { "text": "QC130 and QC150 are in the curriculum but are not counted toward the 4-unit qi cultivation requirement. The schedule's foundation list names six other courses, and whether these count as well is unsettled.", "status": "unconfirmed" },
 
@@ -180,6 +182,8 @@
     "QC120": { "title": "Eight Treasures Qi Gong", "units": 1, "track": "tq" },
     "QC140": { "title": "Infinichi Qi Gong", "units": 1, "track": "tq" },
     "QC252": { "title": "Dao-In Qi Gong Level 3", "units": 1, "track": "tq" },
+    "QC241": { "title": "Infinichi 2A", "units": 1, "track": "tq", "pre": ["QC140"] },
+    "QC355": { "title": "New Provision Chen Style Tai Chi", "units": 1, "track": "tq" },
     "QC130": { "title": "Harmony Taijiquan (1 of 2)", "units": 1, "track": "tq", "series": "QC130x2" },
     "QC131": { "title": "Harmony Taijiquan (2 of 2)", "units": 1, "track": "tq", "series": "QC130x2" },
     "QC150": { "title": "Dao-In Qigong (1 of 3)", "units": 1, "track": "tq", "series": "QC150x3" },
@@ -193,6 +197,12 @@
     "PD340": { "title": "Research", "units": 1, "track": "pd", "pre": ["CL100"] },
     "PD350": { "title": "Taoist Acupuncture", "units": 1, "track": "pd", "pre": ["AC201", "AC202", "AC203"] },
     "PD410": { "title": "Integrative Medicine I", "units": 1, "track": "pd", "co": ["CL700"] },
-    "PD450": { "title": "Patient Education & Counseling", "units": 1, "track": "pd", "pre": ["CL100", "WM340"] }
+    "PD450": { "title": "Patient Education & Counseling", "units": 1, "track": "pd", "pre": ["CL100", "WM340"] },
+    "PD210": { "title": "Medical Writing & Communication", "units": 2, "track": "pd", "pre": ["WM340", "CL600"] },
+    "PD420": { "title": "Chinese Herbs & Modern Disorders", "units": 3, "track": "pd", "pre": ["CM201", "CM202", "HM210", "HM220", "HM230"] },
+    "PD430": { "title": "Taoist Medicine", "units": 1, "track": "pd", "pre": ["TO100", "TO200", "TO300", "CM420"] },
+    "PD520": { "title": "Advanced Acu Systems - Oncology", "units": 3, "track": "pd" },
+    "PD560": { "title": "Advanced Acu Systems - Orthopedics", "units": 2, "track": "pd" },
+    "CL911": { "title": "Integrative Case Studies (Completion Module)", "units": 1, "track": "pd" }
   }
 }
