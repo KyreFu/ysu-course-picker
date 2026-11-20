@@ -53,7 +53,7 @@ Four options in the top left. Each filters the graph down to just what that goal
 |---|---|---|
 | Whole program | 95 entries — 88 courses and 7 series | 209 |
 | First Comprehensive (EX100) | 14 | 38 |
-| Pre-clinical exams (EX210 / EX220) | 23 | 62 |
+| Pre-clinical exams (EX210 / EX220) | 31 | 82 |
 | Graduation Exam (EX300) | 38 | 114 |
 
 Benchmark exams carry no units. The 1 and 2 printed beside them on the schedule are the two sittings offered each term, not credit.
@@ -74,7 +74,7 @@ This used to be a number in a coloured bubble on each row. The number meant litt
 
 Each row carries two buttons: **✓** marks the course done, **+** adds it to your plan and becomes **−** to take it back out. Marking a course done drops it off this list and usually pushes new rows on, since finishing something is what unlocks the next thing.
 
-**Courses that don't run this term are still listed**, because not being offered now says nothing about whether you've already taken it. Their **+** is greyed out — you can't plan them for this term — but **✓** works normally. This is how you record something like CM100, which isn't on the Fall 2026 schedule but is a prerequisite for CM201: tick it off and CM201 opens up.
+**Courses that don't run this term are still listed**, because not being offered now says nothing about whether you've already taken it. Their **+** is greyed out — you can't plan them for this term — but **✓** works normally. This is how you record something like WM160 General Psychology, which isn't on the Spring 2027 schedule but is a prerequisite for WM340: tick it off and WM340 can open up.
 
 A **series** — a course taken several times, like the five-part CL600 internship — shows a **›** instead. Open it to see the parts and pick one; see [Series](#series).
 
@@ -292,7 +292,7 @@ Colours are tracks: TCM theory, herbal medicine, acupuncture, biomedicine, clini
 
 Every requirement a course has is on the graph, but not every one gets its own arrow. A requirement is **direct** when nothing else that course needs already needs it, and it's drawn. Otherwise it's **transitive** — you reach it by following the arrows through the courses in between — and drawing it again would only repeat what the path already says.
 
-CL600 requires twelve things. Eight of them are already required by the Pre-Clinical Exam, which CL600 also requires, so they arrive through it and only four arrows are drawn. Across the whole graph this removes 38 of 170 prerequisite arrows without losing a single relationship.
+CL600 requires twelve things. The other eleven are all required by the Pre-Clinical Exam, which CL600 also requires, so they arrive through it and only one arrow is drawn, from the exam. Across the whole graph this removes 46 of 194 prerequisite arrows without losing a single relationship.
 
 Nothing is hidden by this. **Needs** in the detail panel lists every requirement, direct or not, and readiness is computed from the full list — so a course never becomes takeable because an arrow wasn't drawn. Corequisites and "one of" groups are never reduced: neither guarantees a specific course was completed, so neither can stand in for one.
 
@@ -329,7 +329,7 @@ The point is that a student who notices something odd can tell whether it's a bu
 
 ## Where the data comes from
 
-**Current term: Spring 2027.** Course Schedule version 2, dated 19 November 2026, published at [yosan.edu](https://yosan.edu/course-schedule-yo-san-university/). Course numbers, titles, units, meeting times, instructors and delivery modes come from page 1 and the doctoral and exam tables on page 2. Arizona's local classes (Tempe in-person and Arizona-only Zoom sections, timed in MST) are left out, as they were for Fall 2026. Prerequisites still follow the curriculum as built from the Fall 2026 key. The Spring 2027 key differs for CM201, CM202, WM212, WM310, AC302, AC310 and the Pre-Clinical Exam (EX210, which the key now says also needs CM113 and HM210–HM230), and the curriculum hasn't been changed to match yet.
+**Current term: Spring 2027.** Course Schedule version 2, dated 19 November 2026, published at [yosan.edu](https://yosan.edu/course-schedule-yo-san-university/). Course numbers, titles, units, meeting times, instructors and delivery modes come from page 1 and the doctoral and exam tables on page 2. Arizona's local classes (Tempe in-person and Arizona-only Zoom sections, timed in MST) are left out, as they were for Fall 2026. Prerequisites follow this schedule's key, on page 2. Compared with the Fall 2026 key it changed CM201 (no longer needs CM100), CM202 (adds CM113), WM212 (needs the anatomy series and WM130, not WM211), WM310 (WM212 completed, not alongside), AC302 (needs the AC201–203 series and CM111–112, not AC301), AC310 (AC301 or AC302) and the Pre-Clinical Exam (adds CM113 and HM210–HM230).
 
 **Fall 2026** (`data/classes-2026-fall.json`): Course Schedule version 5, dated 26 August 2026, published at [yosan.edu](https://yosan.edu/course-schedule-yo-san-university/). Course numbers, titles, units, meeting times and instructor come from page 1; the lettered prerequisite key from page 2.
 
@@ -349,7 +349,7 @@ The registration form is a separate document and contains no course listings.
 
 **"At least one CL310 or CL400"** is modelled properly — WM340 and WM420 unlock with either. Same for WM431, which accepts internship Level 2 or Level 3.
 
-**Only direct requirements are drawn.** See [Direct and transitive requirements](#direct-and-transitive-requirements) below. CL600 is the clearest case: the schedule names eleven courses plus the Pre-Clinical Exam, but eight of those eleven are already required by the exam itself, so CL600 shows four arrows instead of twelve. The readiness check still tests all of them.
+**Only direct requirements are drawn.** See [Direct and transitive requirements](#direct-and-transitive-requirements) below. CL600 is the clearest case: the schedule names eleven courses plus the Pre-Clinical Exam, but the exam itself already requires all eleven, so CL600 shows one arrow instead of twelve. The readiness check still tests all of them.
 
 **Prerequisites can only be waived by approved Override Petition.** This tool is a planning aid. Before you register, check the catalog and talk to an academic counselor.
 
